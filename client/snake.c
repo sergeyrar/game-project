@@ -47,8 +47,10 @@ int start_snake_game()
     food = update_food(snake_head);
     print_food(food);
    	print_snake(snake_head);
+   	/*new code for game*/
    	udp_init();
-    
+   	register_in_server();
+    /*--------------------------*/
     while(!is_snake_alive(snake_head)) {
         usleep(1000000/SPEED);
         if (kbhit()) {

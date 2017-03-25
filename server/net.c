@@ -591,9 +591,6 @@ NetReceive(volatile uchar * inpkt, int len)
 	uchar *pkt;
 	ushort cti = 0, vlanid = VLAN_NONE, myvlanid, mynvlanid;
 
-#ifdef ET_DEBUG
-	Uart_Printf("packet received\n");
-#endif
 
 	NetRxPkt = inpkt;
 	NetRxPktLen = len;
