@@ -32,8 +32,7 @@ int udp_init()
 
 int send_message(void* key_stroke)
 {
-	struct sockaddr_in si_other;
-	int slen=sizeof(si_other);
+	socklen_t slen=sizeof(si_other);
 
 	if (sendto(s, key_stroke, BUFLEN, 0, (struct sockaddr *)&si_other, slen)==-1)
 	{
