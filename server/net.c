@@ -11,6 +11,7 @@
 
 #define	ESC_KEY		0x1b
 #define MAC_SIZE    6
+#define UDP_HDR_SIZE 8
 
 /*#define diag_Uart_Printf	Uart_Printf*/
 
@@ -805,6 +806,41 @@ NetReceive(volatile uchar * inpkt, int len)
 		else if (ip->ip_p == IPPROTO_UDP)
 		{	/* Only UDP packets */
 			Uart_Printf ("Got a udp packet\n");
+			Uart_Printf ("move from ip header %d bytes\n", ((ip->ip_hl_v & 0x0f)*4 + UDP_HDR_SIZE));
+			u8 test = ip->ip_hl_v;
+			char *ptr = (char*)ip;
+			ptr += (ip->ip_hl_v & 0x0f)*4 + UDP_HDR_SIZE;
+			
+			
+			Uart_Printf ("action is 0x%02x\n", *ptr);
+			Uart_Printf ("action is %s\n", *ptr);
+			
+			switch (*ptr) {
+				case UP:
+				Uart_Printf ("Received key UP\n");
+				break;
+				case DOWN:
+				Uart_Printf ("Received key DOWN\n");
+				break;
+				case LEFT:
+				Uart_Printf ("Received key LEFT\n");
+				break;
+				case RIGHT:
+				Uart_Printf ("Received key RIGHT\n");
+				break;
+				
+				
+				
+			}
+			
+			/* Handle player events:
+			 * Receive player action-
+			 * run code to verify no collisions, food collection etc... send position,size,death update.
+			 * Registration is also expected to arrive from here-
+			 * Place new player into array of players (according to S.IP, if exists send abort message - client should print dup-IP detected), 
+			 * set initial position and send it to player
+			 */
+			 
 			return;
 		}
 

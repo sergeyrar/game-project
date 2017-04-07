@@ -464,10 +464,13 @@ static IPaddr_t NetReadIP(void *from)
 	return ip;
 }
 
-
+/*new for my game*/
 void
 eth_halt(void);
 
+typedef enum direction_e {
+    LEFT = 97, RIGHT = 100, UP = 119, DOWN = 115
+} direction_t;
 
 
 
