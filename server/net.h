@@ -280,7 +280,7 @@ typedef struct
 	 * the sizes above, and are defined as appropriate for
 	 * specific hardware/protocol combinations.
 	 */
-	uchar		ar_data[16];
+	uchar		ar_data[20];
 #if 0
 	uchar		ar_sha[];	/* Sender hardware address	*/
 	uchar		ar_spa[];	/* Sender protocol address	*/

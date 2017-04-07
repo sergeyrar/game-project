@@ -10,7 +10,7 @@
 #include "net.h"
 
 #define	ESC_KEY		0x1b
-
+#define MAC_SIZE    6
 
 /*#define diag_Uart_Printf	Uart_Printf*/
 
@@ -25,12 +25,13 @@ int  bHasBeenSet = 0;
 
 
 IPaddr_t		NetPingIP;
-IPaddr_t		NetOurIP;
+IPaddr_t		NetOurIP = 0x0a000064;
+IPaddr_t		NetOurIP_network_order = 0x6400000a;
 IPaddr_t		NetOurSubnetMask=0;		/* Our subnet mask (0=unknown)	*/
 IPaddr_t		NetOurGatewayIP=0;		/* Our gateways IP address	*/
 ushort			NetOurVLAN = 0xFFFF;		/* default is without VLAN	*/
 ushort			NetOurNativeVLAN = 0xFFFF;	/* ditto			*/
-uchar			NetOurEther[6];
+uchar			NetOurEther[6] = {0x00, 0xaa, 0xbb, 0xaa, 0xbb, 0xaa};
 int				NetState;		/* Network loop state			*/
 static rxhand_f *packetHandler;		/* Current RX packet handler		*/
 static thand_f *timeHandler;		/* Current timeout handler		*/
@@ -659,39 +660,29 @@ NetReceive(volatile uchar * inpkt, int len)
 			Uart_Printf("bad length %d < %d\n", len, ARP_HDR_SIZE);
 			return;
 		}
-		if (htons /* ntohs */(arp->ar_hrd) != ARP_ETHER) {
-			return;
-		}
-		if (htons /* ntohs */(arp->ar_pro) != PROT_IP) {
-			return;
-		}
-		if (arp->ar_hln != 6) {
-			return;
-		}
-		if (arp->ar_pln != 4) {
-			return;
-		}
 
-		if (NetOurIP == 0) {
+		if (NetReadIP(&arp->ar_data[16]) != htonl(NetOurIP)) {
+			u8 *ip_ptr = &NetOurIP;
+			Uart_Printf ("dest IP data=%u.%u.%u.%u, out IP is 0x%08x or %u.%u.%u.%u\n", 
+			arp->ar_data[16], arp->ar_data[17], arp->ar_data[18], arp->ar_data[19], NetOurIP, 
+			*ip_ptr, *(ip_ptr + 1), *(ip_ptr + 2), *(ip_ptr + 3)); 
 			return;
 		}
-
-		if (NetReadIP(&arp->ar_data[16]) != NetOurIP) {
-			return;
-		}
+		Uart_Printf ("Got correct ARP packet\n");
 		switch (htons /* ntohs */(arp->ar_op)) {
 		case ARPOP_REQUEST:		/* reply with our IP address	*/
 #ifdef ET_DEBUG
 			Uart_Printf ("Got ARP REQUEST, return our IP\n");
 #endif
-			pkt = (uchar *)et;
-			pkt += NetSetEther(pkt, et->et_src, PROT_ARP);
-			arp->ar_op = htons(ARPOP_REPLY);
-			memcpy   (&arp->ar_data[10], &arp->ar_data[0], 6);
+			et = (Ethernet_t *)inpkt;
+			memcpy (et->et_dest, et->et_src, MAC_SIZE);
+			memcpy (et->et_src, NetOurEther, MAC_SIZE);
+			memcpy (&arp->ar_data[10], &arp->ar_data[0], 6);
 			NetCopyIP(&arp->ar_data[16], &arp->ar_data[6]);
 			memcpy   (&arp->ar_data[ 0], NetOurEther, 6);
-			NetCopyIP(&arp->ar_data[ 6], &NetOurIP);
-			(void) eth_send((uchar *)et, (pkt - (uchar *)et) + ARP_HDR_SIZE);
+			NetCopyIP(&arp->ar_data[ 6], &NetOurIP_network_order);
+			arp->ar_op = htons(ARPOP_REPLY);
+			(void) eth_send((uchar *)et, len);
 			return;
 
 		case ARPOP_REPLY:		/* arp reply */
