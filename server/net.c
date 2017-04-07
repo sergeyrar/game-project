@@ -739,22 +739,9 @@ NetReceive(volatile uchar * inpkt, int len)
 		}
 		len = htons (ip->ip_len);
 #ifdef ET_DEBUG
-		Uart_Printf("len=%d, v=%02x\n", len, ip->ip_hl_v & 0xff);
+		Uart_Printf("len=%d, v=%02x\n", len, ip->ip_hl_v>>4 & 0xf);
 #endif
-		if ((ip->ip_hl_v & 0xf0) != 0x40) {
-			return;
-		}
-		if (ip->ip_off & htons(0x1fff)) { /* Can't deal w/ fragments */
-			return;
-		}
-		if (!NetCksumOk((uchar *)ip, IP_HDR_SIZE_NO_UDP / 2)) {
-			Uart_Printf ("checksum bad\n");
-			return;
-		}
-		tmp = NetReadIP(&ip->ip_dst);
-		if (NetOurIP && tmp != NetOurIP && tmp != 0xFFFFFFFF) {
-			return;
-		}
+
 		/*
 		 * watch for ICMP host redirects
 		 *
