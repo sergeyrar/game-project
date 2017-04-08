@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "error_hndl.h"
 #include "snake.h"
@@ -33,15 +34,20 @@ void udp_init()
 
 void register_in_server()
 {
+	int i;
 	char reg = START;
 	socklen_t slen=sizeof(si_other);
 
-	if (sendto(s, (void*)&reg, BUFLEN, 0, (struct sockaddr *)&si_other, slen)==-1)
+	for (i = 0; i < 3; i++)
 	{
-		die("sendto() failed");
+		if (sendto(s, (void*)&reg, BUFLEN, 0, (struct sockaddr *)&si_other, slen)==-1)
+		{
+			die("sendto() failed");
+		}
+		
+		printf("A 0x%02x message was sent to server\n", reg);
+		usleep(100000);
 	}
-	
-	printf("A 0x%02x message was sent to server\n", reg);
 }
 
 void send_message(void* key_stroke)

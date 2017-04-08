@@ -361,7 +361,7 @@ eth_init(bd_t * bd)
   Received a packet and pass to upper layer
 */
 int
-eth_rx(void)
+eth_rx(unsigned char *player_id, unsigned char* action, unsigned char *station_id)
 {
 
 	u8 rxbyte, *rdptr = (u8 *) NetRxPackets[0];
@@ -438,7 +438,7 @@ eth_rx(void)
 			DM9000_DMP_PACKET("eth_rx", rdptr, RxLen);
 
 			DM9000_DBG("passing packet to upper layer\n");
-			NetReceive(NetRxPackets[0], RxLen);
+			NetReceive(NetRxPackets[0], RxLen, player_id, action, station_id);
 //			break;
 		}
 	}

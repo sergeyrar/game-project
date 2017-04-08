@@ -13,8 +13,6 @@
 #include "net.h"
 //#include "game.h"
 
-
-
 #define	ESC_KEY		0x1b
 #define MAC_SIZE    6
 #define UDP_HDR_SIZE 8
@@ -87,36 +85,22 @@ unsigned long simple_strtoul(const char *cp,char **endp,unsigned int base)
 	return result;
 }
 
-
+static void register_player(u8 key)
+{
+	Uart_Printf ("sending position info for player %u\n", key);
+	
+	
+}
 
 /*should move to game.c file once I understand why undefined referecne error appears*/
 
-static void player_event_handle(char *action, u8 *player_ip)
+static void player_event_handle(char *action, u8 *player_ip, unsigned char *player_id, unsigned char *player_action)
 {
 	assert(action != NULL);
 	Uart_Printf ("inside handle_player_event ip is %u.%u.%u.%u\n", *player_ip, *(player_ip + 1), *(player_ip + 2), *(player_ip + 3));
-
-	switch (*action) {
-		case UP:
-		Uart_Printf ("Received key UP\n");
-		break;
-		case DOWN:
-		Uart_Printf ("Received key DOWN\n");
-		break;
-		case LEFT:
-		Uart_Printf ("Received key LEFT\n");
-		break;
-		case RIGHT:
-		Uart_Printf ("Received key RIGHT\n");
-		break;
-		case START:
-		Uart_Printf ("Received GAME START\n");
-		break;
-		case END:
-		Uart_Printf ("Received GAME END\n");
-		break;
-	}
-	return;
+	u8 player_key = *(player_ip + 3);	
+	*player_id = player_key;
+	*player_action = *action; 
 }
 
 
@@ -281,9 +265,9 @@ void start_eth_device(void)
 	
 }
 
-void receive_packet(void)
+void receive_players_actions(unsigned char *player_id, unsigned char *action, unsigned char *station_id)
 {
-		eth_rx ();
+		eth_rx (player_id, action, station_id);
 		//Timer_Bdelay_Milli (100); 
 }
 
@@ -607,7 +591,7 @@ restart:
 
 
 void
-NetReceive(volatile uchar * inpkt, int len)
+NetReceive(volatile uchar * inpkt, int len, unsigned char *player_id, unsigned char *action, unsigned char *station_id)
 {
 	Ethernet_t *et;
 	IP_t	*ip;
@@ -622,7 +606,12 @@ NetReceive(volatile uchar * inpkt, int len)
 	NetRxPkt = inpkt;
 	NetRxPktLen = len;
 	et = (Ethernet_t *)inpkt;
-
+	/*copy station_id info*/	
+	memcpy((void*)station_id, et->et_src, 6); 
+	
+	Uart_Printf("packet received from src_mac = %02x:%02x:%02x:%02x:%02x:%02x\n", 
+	station_id[0], station_id[1], station_id[2], station_id[3], station_id[4], station_id[5]);
+	
 	/* too small packet? */
 	if (len < ETHER_HDR_SIZE)
 		return;
@@ -688,7 +677,7 @@ NetReceive(volatile uchar * inpkt, int len)
 		}
 
 		if (NetReadIP(&arp->ar_data[16]) != htonl(NetOurIP)) {
-			u8 *ip_ptr = &NetOurIP;
+			u8 *ip_ptr = (u8*)&NetOurIP;
 			Uart_Printf ("dest IP data=%u.%u.%u.%u, out IP is 0x%08x or %u.%u.%u.%u\n", 
 			arp->ar_data[16], arp->ar_data[17], arp->ar_data[18], arp->ar_data[19], NetOurIP, 
 			*ip_ptr, *(ip_ptr + 1), *(ip_ptr + 2), *(ip_ptr + 3)); 
@@ -833,7 +822,7 @@ NetReceive(volatile uchar * inpkt, int len)
 			Uart_Printf ("Got a udp packet\n");
 			char *ptr = (char*)ip;
 			ptr += (ip->ip_hl_v & 0x0f)*4 + UDP_HDR_SIZE;
-			player_event_handle(ptr, (u8*)&ip->ip_src);
+			player_event_handle(ptr, (u8*)&ip->ip_src, player_id, action);
 			
 			
 			 
