@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
+#include <errno.h>
+//#include <arpa/inet.h>
 
 #include "types.h"
 #include "Utils.h"
@@ -8,6 +11,9 @@
 #define NET_MAIN
 #define ET_DEBUG
 #include "net.h"
+//#include "game.h"
+
+
 
 #define	ESC_KEY		0x1b
 #define MAC_SIZE    6
@@ -80,6 +86,46 @@ unsigned long simple_strtoul(const char *cp,char **endp,unsigned int base)
 		*endp = (char *)cp;
 	return result;
 }
+
+
+
+/*should move to game.c file once I understand why undefined referecne error appears*/
+
+static void player_event_handle(char *action, u8 *player_ip)
+{
+	assert(action != NULL);
+	Uart_Printf ("inside handle_player_event ip is %u.%u.%u.%u\n", *player_ip, *(player_ip + 1), *(player_ip + 2), *(player_ip + 3));
+
+	switch (*action) {
+		case UP:
+		Uart_Printf ("Received key UP\n");
+		break;
+		case DOWN:
+		Uart_Printf ("Received key DOWN\n");
+		break;
+		case LEFT:
+		Uart_Printf ("Received key LEFT\n");
+		break;
+		case RIGHT:
+		Uart_Printf ("Received key RIGHT\n");
+		break;
+		case START:
+		Uart_Printf ("Received GAME START\n");
+		break;
+		case END:
+		Uart_Printf ("Received GAME END\n");
+		break;
+	}
+	return;
+}
+
+
+
+/*---------------------------------------------------------------------------------*/
+
+
+
+
 
 
 /* write IP *in network byteorder* */
@@ -284,30 +330,6 @@ void TestPing (void)
 	bDoActAsPingServer = 0;	
 }
 
-void
-TestPingServer ()
-{
-	bDoActAsPingServer = 1;
-	
-	TestPing ();
-}
-
-void
-NetSetTimeout(ulong iv, thand_f * f)
-{
-/*
-	if (iv == 0)
-	{
-		timeHandler = (thand_f *)0;
-	} else
-	{
-		timeHandler = f;
-		timeStart = get_timer(0);
-		timeDelta = iv;
-	}
-*/	
-	return;
-}
 
 int
 NetSetEther(volatile uchar * xet, uchar * addr, uint prot)
@@ -480,6 +502,8 @@ static int net_check_prereq (proto_t protocol)
 	return 0;
 }	
 
+
+
 /**********************************************************************/
 /*
  *	Main network processing loop.
@@ -591,6 +615,7 @@ NetReceive(volatile uchar * inpkt, int len)
 	IPaddr_t tmp;
 	int	x;
 	uchar *pkt;
+	IPaddr_t player_ip;
 	ushort cti = 0, vlanid = VLAN_NONE, myvlanid, mynvlanid;
 
 
@@ -806,43 +831,11 @@ NetReceive(volatile uchar * inpkt, int len)
 		else if (ip->ip_p == IPPROTO_UDP)
 		{	/* Only UDP packets */
 			Uart_Printf ("Got a udp packet\n");
-			Uart_Printf ("move from ip header %d bytes\n", ((ip->ip_hl_v & 0x0f)*4 + UDP_HDR_SIZE));
-			u8 test = ip->ip_hl_v;
 			char *ptr = (char*)ip;
 			ptr += (ip->ip_hl_v & 0x0f)*4 + UDP_HDR_SIZE;
+			player_event_handle(ptr, (u8*)&ip->ip_src);
 			
 			
-			Uart_Printf ("action is 0x%02x\n", *ptr);
-			Uart_Printf ("action is %s\n", *ptr);
-			
-			switch (*ptr) {
-				case UP:
-				Uart_Printf ("Received key UP\n");
-				break;
-				case DOWN:
-				Uart_Printf ("Received key DOWN\n");
-				break;
-				case LEFT:
-				Uart_Printf ("Received key LEFT\n");
-				break;
-				case RIGHT:
-				Uart_Printf ("Received key RIGHT\n");
-				break;
-				case START:
-				Uart_Printf ("Received GAME START\n");
-				break;
-				case END:
-				Uart_Printf ("Received GAME END\n");
-				break;
-			}
-			
-			/* Handle player events:
-			 * Receive player action-
-			 * run code to verify no collisions, food collection etc... send position,size,death update.
-			 * Registration is also expected to arrive from here-
-			 * Place new player into array of players (according to S.IP, if exists send abort message - client should print dup-IP detected), 
-			 * set initial position and send it to player
-			 */
 			 
 			return;
 		}

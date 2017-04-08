@@ -5,6 +5,7 @@
 #ifndef NET_H
 #define NET_H
 
+#include <string.h>
 
 /*
 	General ported definitions.
