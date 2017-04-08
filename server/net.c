@@ -3,10 +3,12 @@
 #include <string.h>
 #include <assert.h>
 #include <errno.h>
+#include <stdlib.h>
 //#include <arpa/inet.h>
 
 #include "types.h"
 #include "Utils.h"
+#include "tests.h"
 
 #define NET_MAIN
 #define ET_DEBUG
@@ -270,6 +272,50 @@ void receive_players_actions(unsigned char *player_id, unsigned char *action, un
 		eth_rx (player_id, action, station_id);
 		//Timer_Bdelay_Milli (100); 
 }
+
+
+
+void send_updates(player_t *player, unsigned int num_of_players)
+{
+	Ethernet_t *et;
+	IP_t	*ip;
+	ARP_t	*arp;
+	IPaddr_t tmp;
+	int	i;
+	uchar *packet = (uchar*)malloc(1000);
+	IPaddr_t player_ip;
+	int length = 0;
+	
+	et = (Ethernet_t *)packet;
+	ip = (IP_t *)(packet + E802_HDR_SIZE);
+	
+	/* send updates only to active players */
+
+	//fill in common information - take more from icmp send, will have to calculate IP & UDP checksum.
+	et->et_protlen = htons(0x0800);
+	ip->ip_hl_v = 0x45;
+	
+	
+	for (i = 0; i < num_of_players; i++)
+	{
+		if (player[i].active==1)
+		{	/* fill in ethernet header data */
+			memcpy(et->et_dest, player[i].station_id, MAC_SIZE);
+			memcpy(et->et_src, NetOurEther, MAC_SIZE);			
+			//length += data size;
+			//ip_len = ip size + data; 
+		
+			
+	
+			//eth_send((volatile void *)packet, int length);
+				
+		}
+	}
+	
+	free(packet);
+}
+
+
 
 
 void TestPing (void)

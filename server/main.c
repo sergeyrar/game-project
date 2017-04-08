@@ -8,7 +8,7 @@
 #include "tests.h"
 
 
-#define DEBUG_MODE
+//#define DEBUG_MODE
 //#define DEBUG_MODE_MAIN
 
 #define	ESC_KEY		0x1b
@@ -39,7 +39,6 @@ static void register_new_player(player_t *player, unsigned char player_id, unsig
 	}
 			
 }
-
 
 
 static void update_players_status(player_t *player, unsigned char player_id, unsigned char action, unsigned char *station_id)
@@ -76,7 +75,7 @@ static void update_players_status(player_t *player, unsigned char player_id, uns
 				break;
 	}
 	
-	//send_updates(player_t *player);	
+	send_updates(player, PLAYER_NUM);	
 }
 
 static void check_players_collisions(unsigned char *player)
