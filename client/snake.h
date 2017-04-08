@@ -29,6 +29,11 @@ typedef enum direction_e {
     LEFT = 97, RIGHT = 100, UP = 119, DOWN = 115
 } direction_t;
 
+typedef enum game_status_s {
+    START = 40, END = 41
+} game_status_s;
+
+
 int start_snake_game();
 void init_snake(snake_cell_t**,snake_cell_t**); 
 pos_t update_food(snake_cell_t*);

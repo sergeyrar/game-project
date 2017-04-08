@@ -6,11 +6,12 @@
 #include <string.h>
 
 #include "error_hndl.h"
+#include "snake.h"
 
 #define SRV_IP "10.0.0.100"
 #define PORT 8888
 #define BUFLEN 1
-#define BUFLEN_REG 10
+
 
 struct sockaddr_in si_other;
 static int s;
@@ -32,15 +33,15 @@ void udp_init()
 
 void register_in_server()
 {
-	char buf[10] = "register";
+	char reg = START;
 	socklen_t slen=sizeof(si_other);
 
-	if (sendto(s, buf, BUFLEN_REG, 0, (struct sockaddr *)&si_other, slen)==-1)
+	if (sendto(s, (void*)&reg, BUFLEN, 0, (struct sockaddr *)&si_other, slen)==-1)
 	{
 		die("sendto() failed");
 	}
 	
-	printf("A %s message was sent to server\n", buf);
+	printf("A 0x%02x message was sent to server\n", reg);
 }
 
 void send_message(void* key_stroke)

@@ -828,9 +828,12 @@ NetReceive(volatile uchar * inpkt, int len)
 				case RIGHT:
 				Uart_Printf ("Received key RIGHT\n");
 				break;
-				
-				
-				
+				case START:
+				Uart_Printf ("Received GAME START\n");
+				break;
+				case END:
+				Uart_Printf ("Received GAME END\n");
+				break;
 			}
 			
 			/* Handle player events:
