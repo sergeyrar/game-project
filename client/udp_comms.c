@@ -11,8 +11,8 @@
 
 #define SRV_IP "10.0.0.100"
 #define PORT 8888
-#define BUFLEN 1
-
+#define SEND_BUFLEN 1
+#define RECV_BUFLEN 1000
 
 struct sockaddr_in si_other;
 static int s;
@@ -40,7 +40,7 @@ void register_in_server()
 
 	for (i = 0; i < 3; i++)
 	{
-		if (sendto(s, (void*)&reg, BUFLEN, 0, (struct sockaddr *)&si_other, slen)==-1)
+		if (sendto(s, (void*)&reg, SEND_BUFLEN, 0, (struct sockaddr *)&si_other, slen)==-1)
 		{
 			die("sendto() failed");
 		}
@@ -54,9 +54,27 @@ void send_message(void* key_stroke)
 {
 	socklen_t slen=sizeof(si_other);
 
-	if (sendto(s, key_stroke, BUFLEN, 0, (struct sockaddr *)&si_other, slen)==-1)
+	if (sendto(s, key_stroke, SEND_BUFLEN, 0, (struct sockaddr *)&si_other, slen)==-1)
 	{
 		die("sendto() failed");
 	}
 	printf("A message was sent for key stroke %s\n", (char*)key_stroke);
+}
+
+
+
+
+void receive_state_update()
+{
+	socklen_t slen=sizeof(si_other);
+	int recv_len;
+	unsigned char buf[RECV_BUFLEN];
+	
+	printf("Receiveing packet\n");
+	if ((recv_len = recvfrom(s, buf, RECV_BUFLEN, 0, (struct sockaddr *) &si_other, &slen)) == -1)
+	{
+		die("recvfrom()");
+	}
+	printf("Received packet from %s:%d\n", inet_ntoa(si_other.sin_addr), ntohs(si_other.sin_port));
+	printf("Data: %s\n" , buf);
 }

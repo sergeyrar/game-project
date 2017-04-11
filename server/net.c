@@ -35,7 +35,7 @@ int  bHasBeenSet = 0;
 #define debug	Uart_Printf
 
 
-IPaddr_t		NetPingIP = 0x0a000002; // temp 10.0.0.2 for testing
+IPaddr_t		NetPingIP = 0x0200000a; // temp 10.0.0.2 for testing
 IPaddr_t		NetOurIP = 0x0a000064;
 IPaddr_t		NetOurIP_network_order = 0x6400000a;
 IPaddr_t		NetOurSubnetMask=0;		/* Our subnet mask (0=unknown)	*/
@@ -122,6 +122,31 @@ NetCksum(uchar * ptr, int len)
 	xsum = (xsum & 0xffff) + (xsum >> 16);
 	xsum = (xsum & 0xffff) + (xsum >> 16);
 	return (xsum & 0xffff);
+}
+
+
+unsigned short csum_calc(unsigned short *ptr,int nbytes) 
+{
+    register long sum;
+    unsigned short oddbyte;
+    register short answer;
+ 
+    sum=0;
+    while(nbytes>1) {
+        sum+=*ptr++;
+        nbytes-=2;
+    }
+    if(nbytes==1) {
+        oddbyte=0;
+        *((u_char*)&oddbyte)=*(u_char*)ptr;
+        sum+=oddbyte;
+    }
+ 
+    sum = (sum>>16)+(sum & 0xffff);
+    sum = sum + (sum>>16);
+    answer=(short)~sum;
+     
+    return(answer);
 }
 
 /*---------------------------------------------------------------------------------*/
@@ -296,7 +321,7 @@ void send_updates(player_t *player, unsigned int num_of_players)
 {
 	Ethernet_t *et;
 	IP_t	*ip;
-	uchar *data, *pseudogram;
+	char *data, *pseudogram;
 	IPaddr_t tmp;
 	int	i;
 	uchar *packet = (uchar*)malloc(1000);
@@ -340,7 +365,9 @@ void send_updates(player_t *player, unsigned int num_of_players)
 	Uart_Printf ("dest port ok\n");	
 	ip->udp_len = htons(UDP_HDR_SIZE + DATA_SIZE);	
 	Uart_Printf ("udp_len ok\n");		
-
+	ip->udp_xsum = 0;
+	
+	
 	/* DATA */
 	strcpy(data , "ABCDEFGHIJ");
 	Uart_Printf ("copy data ok\n");
@@ -356,7 +383,7 @@ void send_updates(player_t *player, unsigned int num_of_players)
 	Uart_Printf ("send updates: ip->id = %d\n", ip->ip_id);	
 	NetCopyIP((void*)&ip->ip_dst, &NetPingIP);	   
 	Uart_Printf ("send updates: ip->dst = 0x%x\n", NetPingIP);	
-	ip->ip_sum   = ~NetCksum((uchar *)ip, IP_HDR_SIZE_NO_UDP / 2);
+	ip->ip_sum   = csum_calc((unsigned short*)ip, IP_HDR_SIZE_NO_UDP);
 	Uart_Printf ("send updates: ip->sum = 0x%x\n", ip->ip_sum);
 	
 	
@@ -373,7 +400,7 @@ void send_updates(player_t *player, unsigned int num_of_players)
     memcpy(pseudogram , (char*) &psh , sizeof(udp_ph_t));
     memcpy(pseudogram + sizeof(udp_ph_t), &ip->udp_src, UDP_HDR_SIZE + DATA_SIZE);
 
-	ip->udp_xsum = NetCksum(pseudogram , psize);
+	ip->udp_xsum = csum_calc((unsigned short*)pseudogram , psize);
 	
 
 	eth_send((volatile void *)packet, total_length);

@@ -4,5 +4,6 @@
 void udp_init();
 void send_message(void* key_stroke);
 void register_in_server();
+void receive_state_update();
 
 #endif
