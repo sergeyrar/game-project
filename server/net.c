@@ -20,8 +20,8 @@
 #define UDP_HDR_SIZE 8
 #define DATA_SIZE 10
 
-#define DEST_PORT 8888
-#define SOURCE_PORT 9999
+#define DEST_PORT 9999
+#define SOURCE_PORT 8888
 
 /*#define diag_Uart_Printf	Uart_Printf*/
 

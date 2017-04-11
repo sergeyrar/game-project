@@ -10,13 +10,14 @@
 #include "snake.h"
 
 #define SRV_IP "10.0.0.100"
-#define PORT 8888
+#define SEND_PORT 8888
+#define LISTEN_PORT 9999
 #define SEND_BUFLEN 1
-#define RECV_BUFLEN 1000
+#define RECV_BUFLEN 100
 
-struct sockaddr_in si_other;
+struct sockaddr_in my_addr, send_addr, recv_addr;
 static int s;
-
+static socklen_t slen=sizeof(struct sockaddr_in);
 
 
 void udp_init()
@@ -26,21 +27,37 @@ void udp_init()
 		die("socket failed\n");
 	}
 	
-	memset((char *) &si_other, 0, sizeof(si_other));
-	si_other.sin_family = AF_INET;
-	si_other.sin_port = htons(PORT);
-	si_other.sin_addr.s_addr = inet_addr(SRV_IP);
+	/* my address information */
+	memset((char *) &my_addr, 0, sizeof(struct sockaddr_in));
+	my_addr.sin_family = AF_INET;
+	my_addr.sin_port = htons(LISTEN_PORT);
+	my_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+	
+	// bind socket to port, listen for incoming messages on port LISTEN_PORT
+	if( bind(s , (struct sockaddr*)&my_addr, sizeof(struct sockaddr_in) ) == -1)
+    {
+        die("bind");
+    }
+
+	/* server's address information */
+	memset((char *) &send_addr, 0, sizeof(struct sockaddr_in));
+	send_addr.sin_family = AF_INET;
+	send_addr.sin_port = htons(SEND_PORT);
+	send_addr.sin_addr.s_addr = inet_addr(SRV_IP);
+
+	
 }
 
 void register_in_server()
 {
 	int i;
 	char reg = START;
-	socklen_t slen=sizeof(si_other);
+
 
 	for (i = 0; i < 3; i++)
 	{
-		if (sendto(s, (void*)&reg, SEND_BUFLEN, 0, (struct sockaddr *)&si_other, slen)==-1)
+		if (sendto(s, (void*)&reg, SEND_BUFLEN, 0, (struct sockaddr *)&send_addr, slen)==-1)
 		{
 			die("sendto() failed");
 		}
@@ -52,9 +69,8 @@ void register_in_server()
 
 void send_message(void* key_stroke)
 {
-	socklen_t slen=sizeof(si_other);
 
-	if (sendto(s, key_stroke, SEND_BUFLEN, 0, (struct sockaddr *)&si_other, slen)==-1)
+	if (sendto(s, key_stroke, SEND_BUFLEN, 0, (struct sockaddr *)&send_addr, slen)==-1)
 	{
 		die("sendto() failed");
 	}
@@ -66,15 +82,14 @@ void send_message(void* key_stroke)
 
 void receive_state_update()
 {
-	socklen_t slen=sizeof(si_other);
-	int recv_len;
 	unsigned char buf[RECV_BUFLEN];
 	
 	printf("Receiveing packet\n");
-	if ((recv_len = recvfrom(s, buf, RECV_BUFLEN, 0, (struct sockaddr *) &si_other, &slen)) == -1)
+	
+	if ((recvfrom(s, buf, RECV_BUFLEN, 0, (struct sockaddr *) &recv_addr, &slen)) == -1)
 	{
 		die("recvfrom()");
 	}
-	printf("Received packet from %s:%d\n", inet_ntoa(si_other.sin_addr), ntohs(si_other.sin_port));
+	printf("Received packet from %s:%d\n", inet_ntoa(recv_addr.sin_addr), ntohs(recv_addr.sin_port));
 	printf("Data: %s\n" , buf);
 }

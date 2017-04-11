@@ -169,7 +169,7 @@ void update_direction(direction_t* direction, direction_t* prev_direction)
 {
 	*direction=getchar();
 	send_message((void*)direction);	
-	//receive_state_update();
+	receive_state_update();
 	/*
 	switch(*direction){
 		case UP:
