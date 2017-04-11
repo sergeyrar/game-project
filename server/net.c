@@ -18,6 +18,10 @@
 #define	ESC_KEY		0x1b
 #define MAC_SIZE    6
 #define UDP_HDR_SIZE 8
+#define DATA_SIZE 10
+
+#define DEST_PORT 8888
+#define SOURCE_PORT 9999
 
 /*#define diag_Uart_Printf	Uart_Printf*/
 
@@ -31,7 +35,7 @@ int  bHasBeenSet = 0;
 #define debug	Uart_Printf
 
 
-IPaddr_t		NetPingIP;
+IPaddr_t		NetPingIP = 0x0a000002; // temp 10.0.0.2 for testing
 IPaddr_t		NetOurIP = 0x0a000064;
 IPaddr_t		NetOurIP_network_order = 0x6400000a;
 IPaddr_t		NetOurSubnetMask=0;		/* Our subnet mask (0=unknown)	*/
@@ -106,6 +110,19 @@ static void player_event_handle(char *action, u8 *player_ip, unsigned char *play
 }
 
 
+unsigned
+NetCksum(uchar * ptr, int len)
+{
+	ulong	xsum;
+	ushort *p = (ushort *)ptr;
+
+	xsum = 0;
+	while (len-- > 0)
+		xsum += *p++;
+	xsum = (xsum & 0xffff) + (xsum >> 16);
+	xsum = (xsum & 0xffff) + (xsum >> 16);
+	return (xsum & 0xffff);
+}
 
 /*---------------------------------------------------------------------------------*/
 
@@ -279,40 +296,115 @@ void send_updates(player_t *player, unsigned int num_of_players)
 {
 	Ethernet_t *et;
 	IP_t	*ip;
-	ARP_t	*arp;
+	uchar *data, *pseudogram;
 	IPaddr_t tmp;
 	int	i;
 	uchar *packet = (uchar*)malloc(1000);
+	udp_ph_t psh;
 	IPaddr_t player_ip;
-	int length = 0;
+	int total_length = E802_HDR_SIZE + sizeof(IP_t) + DATA_SIZE;
+	uchar			test[6] = {0x48, 0x51, 0xb7, 0x58, 0x09, 0x3f};
 	
+	/* PLACE header/data pointers */
 	et = (Ethernet_t *)packet;
-	ip = (IP_t *)(packet + E802_HDR_SIZE);
+	ip = (IP_t *)(packet + ETHER_HDR_SIZE);
+	data = packet + ETHER_HDR_SIZE + sizeof(IP_t);
 	
-	/* send updates only to active players */
-
-	//fill in common information - take more from icmp send, will have to calculate IP & UDP checksum.
+	
+	/* Fill data of common fields */
+	/* ETH header */
 	et->et_protlen = htons(0x0800);
-	ip->ip_hl_v = 0x45;
+	
+	/* IP header */
+	ip->ip_hl_v  = 0x45;		/* IP_HDR_SIZE / 4 (not including UDP) */
+	Uart_Printf ("send updates: ip->ip_hl_v = 0x%x\n", ip->ip_hl_v);	
+	ip->ip_tos   = 0;
+	Uart_Printf ("send updates: ip->tos = 0x%x\n", ip->ip_tos);	
+	ip->ip_len   = htons(IP_HDR_SIZE + DATA_SIZE );           //IP_HDR_SIZE includes UDP header as well.  UPDATE DATA_SIZE !
+	Uart_Printf ("send updates: ip->len = %d\n", ip->ip_len);	
+	ip->ip_off   = htons(0x4000);	/* No fragmentation */
+	Uart_Printf ("send updates: ip->off = 0x%x\n", ip->ip_off);	
+	ip->ip_ttl   = 255;
+	Uart_Printf ("send updates: ip->ttl = %d\n", ip->ip_ttl);	
+	ip->ip_p     = IPPROTO_UDP;		
+	Uart_Printf ("send updates: ip->protocol = 0x%x\n", ip->ip_p);	
+	ip->ip_sum   = 0;
+	NetCopyIP((void*)&ip->ip_src, &NetOurIP); /* already in network byte order */
+	Uart_Printf ("send updates: ip->src = 0x%x\n", NetOurIP);	
+	
+
+	/* UDP header */
+	ip->udp_src = htons(SOURCE_PORT);
+	Uart_Printf ("source port ok\n");	
+	ip->udp_dst = htons(DEST_PORT);	
+	Uart_Printf ("dest port ok\n");	
+	ip->udp_len = htons(UDP_HDR_SIZE + DATA_SIZE);	
+	Uart_Printf ("udp_len ok\n");		
+
+	/* DATA */
+	strcpy(data , "ABCDEFGHIJ");
+	Uart_Printf ("copy data ok\n");
+
+
+	/* temp for test */
+	memcpy(et->et_dest, test, MAC_SIZE);
+	Uart_Printf ("mac dest copy ok\n");
+	memcpy(et->et_src, NetOurEther, MAC_SIZE);	
+	Uart_Printf ("mac src copy ok\n");		
+	
+	ip->ip_id    = htons(NetIPID++);
+	Uart_Printf ("send updates: ip->id = %d\n", ip->ip_id);	
+	NetCopyIP((void*)&ip->ip_dst, &NetPingIP);	   
+	Uart_Printf ("send updates: ip->dst = 0x%x\n", NetPingIP);	
+	ip->ip_sum   = ~NetCksum((uchar *)ip, IP_HDR_SIZE_NO_UDP / 2);
+	Uart_Printf ("send updates: ip->sum = 0x%x\n", ip->ip_sum);
 	
 	
+	//Now the UDP checksum using the pseudo header
+    psh.source_address = NetOurIP;
+    psh.dest_address = NetPingIP;
+    psh.placeholder = 0;
+    psh.protocol = IPPROTO_UDP;
+    psh.udp_length = htons(UDP_HDR_SIZE + DATA_SIZE);
+     
+    int psize = sizeof(udp_ph_t) + UDP_HDR_SIZE + DATA_SIZE;
+    pseudogram = malloc(psize);
+     
+    memcpy(pseudogram , (char*) &psh , sizeof(udp_ph_t));
+    memcpy(pseudogram + sizeof(udp_ph_t), &ip->udp_src, UDP_HDR_SIZE + DATA_SIZE);
+
+	ip->udp_xsum = NetCksum(pseudogram , psize);
+	
+
+	eth_send((volatile void *)packet, total_length);
+	Uart_Printf ("packet was transmitted !\n");
+
+/*		
 	for (i = 0; i < num_of_players; i++)
 	{
+		//send updates only to active players 
 		if (player[i].active==1)
-		{	/* fill in ethernet header data */
+		{	//fill in ethernet header data 
 			memcpy(et->et_dest, player[i].station_id, MAC_SIZE);
 			memcpy(et->et_src, NetOurEther, MAC_SIZE);			
-			//length += data size;
-			//ip_len = ip size + data; 
-		
+			
+			ip->ip_id    = htons(NetIPID++);
+			Uart_Printf ("send updates: ip->id = %d\n", ip->ip_id);	
+			NetCopyIP((void*)&ip->ip_dst, &NetPingIP);	   
+			Uart_Printf ("send updates: ip->dst = 0x%x\n", NetPingIP);	
+			ip->ip_sum   = ~NetCksum((uchar *)ip, IP_HDR_SIZE_NO_UDP / 2);
+			Uart_Printf ("send updates: ip->sum = 0x%x\n", ip->ip_sum);
+			
+			ip->udp_xsum = ;
 			
 	
 			//eth_send((volatile void *)packet, int length);
 				
 		}
 	}
-	
+*/	
 	free(packet);
+	free(pseudogram);
 }
 
 
@@ -383,19 +475,7 @@ NetSetEther(volatile uchar * xet, uchar * addr, uint prot)
 	}
 }
 
-unsigned
-NetCksum(uchar * ptr, int len)
-{
-	ulong	xsum;
-	ushort *p = (ushort *)ptr;
 
-	xsum = 0;
-	while (len-- > 0)
-		xsum += *p++;
-	xsum = (xsum & 0xffff) + (xsum >> 16);
-	xsum = (xsum & 0xffff) + (xsum >> 16);
-	return (xsum & 0xffff);
-}
 
 int
 NetCksumOk(uchar * ptr, int len)

@@ -311,6 +311,21 @@ typedef struct {
 	ushort		udp_xsum;	/* Checksum			*/
 } IP_t;
 
+
+
+/*
+ *	UDP pseudo header for UDP checksum calculation.
+ */
+typedef struct udp_pseudo_header
+{
+    IPaddr_t source_address;
+    IPaddr_t dest_address;
+    uchar placeholder;
+    uchar protocol;
+    ushort udp_length;
+}udp_ph_t;
+
+
 /*
  *	Ethernet header
  */
