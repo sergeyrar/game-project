@@ -398,8 +398,8 @@ void send_updates(player_t *player, unsigned int num_of_players)
 		
 		eth_send((volatile void *)packet, total_length);
 		
-		Util_Printf("player update for player_id=%d pos.x=%u, pos.y=%u, size=%u\n", 
-		player[i].player_id, player[i].pos.x, player[i].pos.y, player[i].size);
+		Util_Printf("player update for player_id=%d old pos.x=%u, old pos.y=%u, size=%u\n", 
+		player[i].player_id, player[i].old_pos.x, player[i].old_pos.y, player[i].size);
 		Uart_Printf ("udp packet was transmitted !\n");
 				
 		}

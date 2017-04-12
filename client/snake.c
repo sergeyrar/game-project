@@ -40,7 +40,8 @@ static void print_board_borders()
 int start_snake_game()
 {
 	player_t player[PLAYER_NUM] = {0};
-	pthread_t thread1;
+	pthread_t send_thread;
+	pthread_t receive_thread;
 	
     int score = 0;
     snake_cell_t* snake_head = NULL;
@@ -55,10 +56,11 @@ int start_snake_game()
    	udp_init();
    	register_in_server();
 
-	if (pthread_create(&thread1, NULL, send_direction_update, NULL) != 0)
+	if (pthread_create(&send_thread, NULL, send_direction_update, NULL) != 0)
 	{
 		die("pthread creation failed\n");
 	}
+	
 
     while(1) {
         usleep(10000/SPEED);
@@ -111,8 +113,10 @@ void print_new_state(player_t *player)
 	{
 		if (player[i].active)
 		{
+			gotoxy(player[i].old_pos.x, player[i].old_pos.y);
+			printf(" ");
 			gotoxy(player[i].pos.x, player[i].pos.y);
-			printf("%d, %d", player[i].pos.x, player[i].pos.y);
+			printf("O");
 		}
 	}
 

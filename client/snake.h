@@ -39,6 +39,7 @@ typedef struct snake_cell_s {
 typedef struct player_s {
 	unsigned char active;
 	pos_t pos;
+	pos_t old_pos;
 	unsigned char size;
 	direction_t current_direction;
 	unsigned char player_id;

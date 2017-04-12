@@ -91,6 +91,4 @@ void receive_state_update(player_t *player)
 
 	player_ptr = (player_t*)buf;
 	memcpy(&player[player_ptr->player_id], buf, sizeof(player_t));
-	//printf("data was received\n");
-	//printf("player_id = %u, x= %u, y=%u\n", player_ptr->player_id, player_ptr->pos.x, player_ptr->pos.y);
 }

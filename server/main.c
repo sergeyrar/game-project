@@ -45,16 +45,17 @@ static void register_new_player(player_t *player, unsigned char player_id, unsig
 	if (player[player_id].active == 0)
 	{
 			player[player_id].active = 1;
-			
-			player[player_id].pos.x = BOARD_WIDTH/2;
-			player[player_id].pos.y = BOARD_HEIGHT/2;
+			player[player_id].pos.x = rand() % BOARD_WIDTH;
+			player[player_id].pos.y = rand() % BOARD_HEIGHT;
+			player[player_id].old_pos.x = player[player_id].pos.x;
+			player[player_id].old_pos.y = player[player_id].pos.y;
 			player[player_id].size = INITIAL_SIZE;
 			player[player_id].player_id = player_id;
 			memcpy((void*)&player[player_id].station_id, station_id, 6);
 		
 #ifdef DEBUG_MODE
-		Util_Printf("changed player[%d] to active = %d, pos.x=%u, pos.y=%u, size=%u\n", 
-		player_id, player[player_id].active, player[player_id].pos.x, player[player_id].pos.y, player[player_id].size);
+		Util_Printf("changed player[%d] to active = %d, old.pos.x=%u, old.pos.y=%u, size=%u\n", 
+		player_id, player[player_id].active, player[player_id].old_pos.x, player[player_id].old_pos.y, player[player_id].size);
 		
 		Util_Printf ("inside functions new station id = %02x:%02x:%02x:%02x:%02x:%02x\n",
 		player[player_id].station_id[0], player[player_id].station_id[1], player[player_id].station_id[2], 
@@ -73,7 +74,9 @@ static void update_players_status(player_t *player, unsigned char *player_id, un
 		//Util_Printf ("no packet received this round, exit\n");
 		return;
 	}
-
+	/* save old position */
+	player[*player_id].old_pos.x = player[*player_id].pos.x;
+	player[*player_id].old_pos.y = player[*player_id].pos.y;
 	
 	switch(*action)
 	{

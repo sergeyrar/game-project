@@ -53,9 +53,10 @@ typedef struct position_s {
 typedef struct player_s {
 	unsigned char active;
 	position_t pos;
+	position_t old_pos;
 	unsigned char size;
 	direction_t current_direction;
-	unsigned char player_id;
+	unsigned char player_id;	
 	unsigned char station_id[6];
 } player_t;
 /*----------------------*/
