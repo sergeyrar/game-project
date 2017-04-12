@@ -12,13 +12,12 @@
 #define SRV_IP "10.0.0.100"
 #define SEND_PORT 8888
 #define LISTEN_PORT 9999
-#define SEND_BUFLEN 1
-#define RECV_BUFLEN 100
 
 struct sockaddr_in my_addr, send_addr, recv_addr;
 static int s;
 static socklen_t slen=sizeof(struct sockaddr_in);
-
+static unsigned int recv_buf_len = sizeof(player_t);
+static unsigned int send_buf_len = sizeof(char);
 
 void udp_init()
 {
@@ -55,41 +54,43 @@ void register_in_server()
 	char reg = START;
 
 
-	for (i = 0; i < 3; i++)
+	for (i = 0; i < 5; i++)
 	{
-		if (sendto(s, (void*)&reg, SEND_BUFLEN, 0, (struct sockaddr *)&send_addr, slen)==-1)
+		if (sendto(s, (void*)&reg, send_buf_len, 0, (struct sockaddr *)&send_addr, slen)==-1)
 		{
 			die("sendto() failed");
 		}
 		
-		printf("A 0x%02x message was sent to server\n", reg);
+		//printf("A 0x%02x message was sent to server\n", reg);
 		usleep(100000);
 	}
 }
 
 void send_message(void* key_stroke)
 {
-
-	if (sendto(s, key_stroke, SEND_BUFLEN, 0, (struct sockaddr *)&send_addr, slen)==-1)
+	if (sendto(s, key_stroke, send_buf_len, 0, (struct sockaddr *)&send_addr, slen)==-1)
 	{
 		die("sendto() failed");
 	}
-	printf("A message was sent for key stroke %s\n", (char*)key_stroke);
 }
 
 
 
 
-void receive_state_update()
+void receive_state_update(player_t *player)
 {
-	unsigned char buf[RECV_BUFLEN];
+
+	unsigned char buf[recv_buf_len];
+	player_t *player_ptr;
+
 	
-	printf("Receiveing packet\n");
-	
-	if ((recvfrom(s, buf, RECV_BUFLEN, 0, (struct sockaddr *) &recv_addr, &slen)) == -1)
+	if ((recvfrom(s, buf, recv_buf_len, 0, (struct sockaddr *) &recv_addr, &slen)) == -1)
 	{
 		die("recvfrom()");
 	}
-	printf("Received packet from %s:%d\n", inet_ntoa(recv_addr.sin_addr), ntohs(recv_addr.sin_port));
-	printf("Data: %s\n" , buf);
+
+	player_ptr = (player_t*)buf;
+	memcpy(&player[player_ptr->player_id], buf, sizeof(player_t));
+	//printf("data was received\n");
+	//printf("player_id = %u, x= %u, y=%u\n", player_ptr->player_id, player_ptr->pos.x, player_ptr->pos.y);
 }

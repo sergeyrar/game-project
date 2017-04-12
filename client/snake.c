@@ -3,11 +3,15 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <pthread.h>
 //#include <ncurses.h>
 #include "io_utils.h"
 #include "snake.h"
 #include "udp_comms.h"
+#include "error_hndl.h"
 
+
+#define	ESC_KEY		0x1b
 
 
 /* LOCAL FUNCTIONS */
@@ -35,39 +39,33 @@ static void print_board_borders()
 /* GLOBAL FUNCTIONS */
 int start_snake_game()
 {
+	player_t player[PLAYER_NUM] = {0};
+	pthread_t thread1;
+	
     int score = 0;
     snake_cell_t* snake_head = NULL;
     snake_cell_t* snake_tail = NULL;
-    pos_t food = {0};
     direction_t direction = RIGHT;
-    direction_t prev_direction = DOWN;
 
     print_board_borders();
     init_snake(&snake_head, &snake_tail);
-    food = update_food(snake_head);
-    print_food(food);
    	print_snake(snake_head);
-   	/*new code for game*/
+   	
+
    	udp_init();
    	register_in_server();
-    /*--------------------------*/
-    while(!is_snake_alive(snake_head)) {
-        usleep(1000000/SPEED);
-        if (kbhit()) {
-            update_direction(&direction,&prev_direction);
-        }
-        snake_head=advance_snake_head(snake_head, direction);
-        if (did_snake_eat(snake_head, food)) {
-            food = update_food(snake_head);
-            print_food(food);
-            score++;
-        } else {
-        	snake_tail=advance_snake_tail(snake_head, snake_tail);
-        }
-    }
-  
-    snake_tail = NULL;
-    free_snake(&snake_head);
+
+	if (pthread_create(&thread1, NULL, send_direction_update, NULL) != 0)
+	{
+		die("pthread creation failed\n");
+	}
+
+    while(1) {
+        usleep(10000/SPEED);
+		receive_state_update(player);
+        print_new_state(player);
+	}
+
     return score;
 }
 
@@ -103,28 +101,21 @@ void init_snake(snake_cell_t** snake_head, snake_cell_t** snake_tail)
 
 
 
-pos_t update_food(snake_cell_t* snake_head)
+
+
+
+void print_new_state(player_t *player)
 {
-	snake_cell_t* snake_cell=snake_head;
-	pos_t food;
-	food.x=(rand()%(BOARD_WIDTH-BUFFER)) + BUFFER;
-	food.y=(rand()%(BOARD_HEIGHT-BUFFER)) + BUFFER;		
-	
-	while(snake_cell != NULL){
-		if ((snake_cell->pos.x==food.x) && (snake_cell->pos.y==food.y)){
-			food.x=(rand()%(BOARD_WIDTH-BUFFER)) + BUFFER;
-			food.y=(rand()%(BOARD_HEIGHT-BUFFER)) + BUFFER;	
+	int i;
+	for (i = 0; i < PLAYER_NUM; i++)
+	{
+		if (player[i].active)
+		{
+			gotoxy(player[i].pos.x, player[i].pos.y);
+			printf("%d, %d", player[i].pos.x, player[i].pos.y);
 		}
-		snake_cell=snake_cell->next;
 	}
-	return food;
-}
 
-
-void print_food(pos_t food)
-{
-	gotoxy(food.x,food.y);
-	printf("%c",FOOD);
 }
 
 
@@ -165,54 +156,17 @@ void print_snake(snake_cell_t* snake_head)
 
 
 
-void update_direction(direction_t* direction, direction_t* prev_direction)
+void * send_direction_update(void * var)
 {
-	*direction=getchar();
-	send_message((void*)direction);	
-	receive_state_update();
-	/*
-	switch(*direction){
-		case UP:
-			if (*prev_direction==DOWN){
-				*direction=DOWN;
-			}else{
-				*prev_direction=*direction;
-				*direction=UP;
-			}
-			break;
-			
-		case DOWN:
-			if (*prev_direction==UP){
-				*direction=UP;
-			}else{
-				*prev_direction=*direction;
-				*direction=DOWN;
-			}
-			break;
-			
-		case LEFT:
-			if (*prev_direction==RIGHT){
-				*direction=RIGHT;
-			}else{
-				*prev_direction=*direction;
-				*direction=LEFT;
-			}
-			break;
-			
-			
-		case RIGHT:
-			if (*prev_direction==LEFT){
-				*direction=LEFT;
-			}else{
-				*prev_direction=*direction;
-				*direction=RIGHT;
-			}
-			break;
-			
-		default:
-			break;
+	direction_t get_char = 0;
+	
+	while((get_char = getchar()) != ESC_KEY) 
+	{
+		//printf("thread is running1\n");
+		send_message((void*)&get_char);	
 	}
-	*/ 	
+	
+	return NULL;
 }
 
 

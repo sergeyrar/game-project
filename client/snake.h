@@ -11,6 +11,16 @@
 #define BOARD_HEIGHT 40
 #define BUFFER 2
 #define SPEED 4
+#define PLAYER_NUM 256
+
+
+typedef enum direction_e {
+    LEFT = 97, RIGHT = 100, UP = 119, DOWN = 115
+} direction_t;
+
+typedef enum game_status_s {
+    START = 40, END = 41
+} game_status_s;
 
 
 typedef struct pos_s {
@@ -24,23 +34,25 @@ typedef struct snake_cell_s {
     struct snake_cell_s* next;
 //    struct snake_cell_s* prev;
 } snake_cell_t;
-    
-typedef enum direction_e {
-    LEFT = 97, RIGHT = 100, UP = 119, DOWN = 115
-} direction_t;
 
-typedef enum game_status_s {
-    START = 40, END = 41
-} game_status_s;
+
+typedef struct player_s {
+	unsigned char active;
+	pos_t pos;
+	unsigned char size;
+	direction_t current_direction;
+	unsigned char player_id;
+} player_t;
+   
 
 
 int start_snake_game();
 void init_snake(snake_cell_t**,snake_cell_t**); 
 pos_t update_food(snake_cell_t*);
 int is_snake_alive(snake_cell_t*);
-void print_food(pos_t);
+void print_new_state(player_t *player);
 void print_snake(snake_cell_t*);
-void update_direction(direction_t*,direction_t*);
+void * send_direction_update(void * var);
 snake_cell_t* advance_snake_head(snake_cell_t*, direction_t);
 int did_snake_eat(snake_cell_t*, pos_t);
 snake_cell_t* advance_snake_tail(snake_cell_t*, snake_cell_t*);

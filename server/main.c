@@ -19,7 +19,25 @@
 
 
 
+/*
+pos_t update_food(snake_cell_t* snake_head)
+{
+	snake_cell_t* snake_cell=snake_head;
+	pos_t food;
+	food.x=(rand()%(BOARD_WIDTH-BUFFER)) + BUFFER;
+	food.y=(rand()%(BOARD_HEIGHT-BUFFER)) + BUFFER;		
+	
+	while(snake_cell != NULL){
+		if ((snake_cell->pos.x==food.x) && (snake_cell->pos.y==food.y)){
+			food.x=(rand()%(BOARD_WIDTH-BUFFER)) + BUFFER;
+			food.y=(rand()%(BOARD_HEIGHT-BUFFER)) + BUFFER;	
+		}
+		snake_cell=snake_cell->next;
+	}
+	return food;
+}
 
+*/
 
 
 static void register_new_player(player_t *player, unsigned char player_id, unsigned char *station_id)
@@ -27,11 +45,17 @@ static void register_new_player(player_t *player, unsigned char player_id, unsig
 	if (player[player_id].active == 0)
 	{
 			player[player_id].active = 1;
+			
 			player[player_id].pos.x = BOARD_WIDTH/2;
 			player[player_id].pos.y = BOARD_HEIGHT/2;
 			player[player_id].size = INITIAL_SIZE;
+			player[player_id].player_id = player_id;
 			memcpy((void*)&player[player_id].station_id, station_id, 6);
+		
 #ifdef DEBUG_MODE
+		Util_Printf("changed player[%d] to active = %d, pos.x=%u, pos.y=%u, size=%u\n", 
+		player_id, player[player_id].active, player[player_id].pos.x, player[player_id].pos.y, player[player_id].size);
+		
 		Util_Printf ("inside functions new station id = %02x:%02x:%02x:%02x:%02x:%02x\n",
 		player[player_id].station_id[0], player[player_id].station_id[1], player[player_id].station_id[2], 
 		player[player_id].station_id[3], player[player_id].station_id[4], player[player_id].station_id[5]);
@@ -41,33 +65,41 @@ static void register_new_player(player_t *player, unsigned char player_id, unsig
 }
 
 
-static void update_players_status(player_t *player, unsigned char player_id, unsigned char action, unsigned char *station_id)
+static void update_players_status(player_t *player, unsigned char *player_id, unsigned char *action, unsigned char *station_id)
 {
-	switch(action)
+
+	if (*player_id ==0 && *action == 0)
+	{
+		//Util_Printf ("no packet received this round, exit\n");
+		return;
+	}
+
+	
+	switch(*action)
 	{
 		case UP:
 				//Util_Printf ("GAME_RUN - player-id = %u , action = UP\n", player_id);
-				player[player_id].pos.y -= 1;
+				player[*player_id].pos.y -= 1;
 				break;
 
 		case DOWN:
 				//Util_Printf ("GAME_RUN - player-id = %u , action = DOWN\n", player_id);
-				player[player_id].pos.y += 1;
+				player[*player_id].pos.y += 1;
 				break;
 
 		case LEFT:
 				//Util_Printf ("GAME_RUN - player-id = %u , action = LEFT\n", player_id);
-				player[player_id].pos.x -= 1;
+				player[*player_id].pos.x -= 1;
 				break;
 
 		case RIGHT:
 				//Util_Printf ("GAME_RUN - player-id = %u , action = RIGHT\n", player_id);
-				player[player_id].pos.x += 1;
+				player[*player_id].pos.x += 1;
 				break;
 
 		case START:	
-				//Util_Printf ("GAME_RUN - player-id = %u , action = START\n", player_id);
-				register_new_player(player, player_id, station_id);
+				Util_Printf ("GAME_RUN - player-id = %u , action = START\n", player_id);
+				register_new_player(player, *player_id, station_id);
 				break;
 
 		case END:
@@ -89,18 +121,18 @@ static void check_players_collisions(unsigned char *player)
 static void game_run(player_t *player)
 {	
 
-	unsigned char *player_id;
-	unsigned char *action;
-	unsigned char station_id[6];
+	unsigned char player_id = 0;
+	unsigned char action = 0;
+	unsigned char station_id[6] = {0};
 	
 	//check_players_collisions(player_id);
-	receive_players_actions(player_id, action, station_id);	
-	update_players_status(player, *player_id, *action, station_id);
+	receive_players_actions(&player_id, &action, station_id);	
+	update_players_status(player, &player_id, &action, station_id);
 	
 #ifdef DEBUG_MODE_MAIN
 		Util_Printf ("GAME_RUN new station id = %02x:%02x:%02x:%02x:%02x:%02x\n",
-		player[*player_id].station_id[0], player[*player_id].station_id[1], player[*player_id].station_id[2], 
-		player[*player_id].station_id[3], player[*player_id].station_id[4], player[*player_id].station_id[5]);
+		player[player_id].station_id[0], player[player_id].station_id[1], player[player_id].station_id[2], 
+		player[player_id].station_id[3], player[player_id].station_id[4], player[player_id].station_id[5]);
 #endif
 }
 
