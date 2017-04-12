@@ -15,7 +15,7 @@
 #define PLAYER_NUM 256
 #define BOARD_WIDTH 100
 #define BOARD_HEIGHT 40
-#define INITIAL_SIZE 10
+#define INITIAL_SIZE 1
 
 
 
