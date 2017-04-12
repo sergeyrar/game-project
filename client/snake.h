@@ -51,7 +51,7 @@ int start_snake_game();
 void init_snake(snake_cell_t**,snake_cell_t**); 
 pos_t update_food(snake_cell_t*);
 int is_snake_alive(snake_cell_t*);
-void print_new_state(player_t *player);
+void * print_new_state(void * player);
 void print_snake(snake_cell_t*);
 void * send_direction_update(void * var);
 snake_cell_t* advance_snake_head(snake_cell_t*, direction_t);

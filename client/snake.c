@@ -41,7 +41,9 @@ int start_snake_game()
 {
 	player_t player[PLAYER_NUM] = {0};
 	pthread_t send_thread;
-	pthread_t receive_thread;
+	pthread_t print_thread;
+	//pthread_t receive_thread;
+	
 	
     int score = 0;
     snake_cell_t* snake_head = NULL;
@@ -61,11 +63,20 @@ int start_snake_game()
 		die("pthread creation failed\n");
 	}
 	
-
+	if (pthread_create(&print_thread, NULL, print_new_state, player) != 0)
+	{
+		die("pthread creation failed\n");
+	}
+/*
+	if (pthread_create(&receive_thread, NULL, receive_update, player) != 0)
+	{
+		die("pthread creation failed\n");
+	}	
+*/
     while(1) {
         //usleep(10000/SPEED);
 		receive_state_update(player);
-        print_new_state(player);
+        //print_new_state(player);
 	}
 
     return score;
@@ -106,19 +117,25 @@ void init_snake(snake_cell_t** snake_head, snake_cell_t** snake_tail)
 
 
 
-void print_new_state(player_t *player)
+void * print_new_state(void * player)
 {
-	int i;
-	for (i = 0; i < PLAYER_NUM; i++)
+	while (1)
 	{
-		if (player[i].active)
+		player_t *player_ptr = (player_t *)player;
+		int i;
+		for (i = 0; i < PLAYER_NUM; i++)
 		{
-			gotoxy(player[i].old_pos.x, player[i].old_pos.y);
-			printf(" ");
-			gotoxy(player[i].pos.x, player[i].pos.y);
-			printf("o");
+			if (player_ptr[i].active)
+			{
+				gotoxy(player_ptr[i].old_pos.x, player_ptr[i].old_pos.y);
+				printf(" ");
+				gotoxy(player_ptr[i].pos.x, player_ptr[i].pos.y);
+				printf("o");
+			}
 		}
-	}
+		
+	}	
+	return NULL;
 
 }
 
