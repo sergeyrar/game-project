@@ -63,7 +63,7 @@ int start_snake_game()
 	
 
     while(1) {
-        usleep(10000/SPEED);
+        //usleep(10000/SPEED);
 		receive_state_update(player);
         print_new_state(player);
 	}
@@ -116,7 +116,7 @@ void print_new_state(player_t *player)
 			gotoxy(player[i].old_pos.x, player[i].old_pos.y);
 			printf(" ");
 			gotoxy(player[i].pos.x, player[i].pos.y);
-			printf("O");
+			printf("o");
 		}
 	}
 

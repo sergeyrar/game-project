@@ -34,7 +34,7 @@ int  bHasBeenSet = 0;
 #define debug	Uart_Printf
 
 
-IPaddr_t		NetPingIP = 0x0200000a; // temp 10.0.0.2 for testing
+IPaddr_t		NetPingIP = 0x0000000a; // replace first byte with user-id , in network byte order.
 IPaddr_t		NetOurIP = 0x0a000064;
 IPaddr_t		NetOurIP_network_order = 0x6400000a;
 IPaddr_t		NetOurSubnetMask=0;		/* Our subnet mask (0=unknown)	*/
@@ -324,12 +324,13 @@ void send_updates(player_t *player, unsigned int num_of_players)
 	IP_t	*ip;
 	char *data, *pseudogram;
 	IPaddr_t tmp;
-	int	i;
+	int	i,j;
 	uchar *packet = (uchar*)malloc(1000);
 	udp_ph_t psh;
 	IPaddr_t player_ip;
 	uchar data_size = sizeof(player_t);
 	int total_length = E802_HDR_SIZE + sizeof(IP_t) + data_size;
+	uchar *player_ptr = NULL;
 	uchar			test[6] = {0x48, 0x51, 0xb7, 0x58, 0x09, 0x3f};
 
 	/* PLACE header/data pointers */
@@ -378,30 +379,38 @@ void send_updates(player_t *player, unsigned int num_of_players)
 		if (player[i].active==1)
 		{	
 		
-		/* DATA */
+		/* send DATA update to all active players */
 		memcpy((void*)data, &player[i], data_size);
-
-		memcpy(et->et_dest, test, MAC_SIZE);
 	
-		ip->ip_id    = htons(NetIPID++);
-		NetCopyIP((void*)&ip->ip_dst, &NetPingIP);	   
-		ip->ip_sum   = 0;	
-		ip->ip_sum   = csum_calc((unsigned short*)ip, IP_HDR_SIZE_NO_UDP);
-		 		 
-		psh.dest_address = NetPingIP;
+			for (j = i; j < num_of_players; j++)
+			{	
+				if (player[j].active == 1)
+				{
+					memcpy(et->et_dest, &player[j].station_id, MAC_SIZE);		
+					ip->ip_id    = htons(NetIPID++);
+					player_ptr = &NetPingIP;
+					player_ptr[3] = player[j].player_id;
 
-		ip->udp_xsum = 0; 
-		memcpy(pseudogram , (char*) &psh , sizeof(udp_ph_t));
-		memcpy(pseudogram + sizeof(udp_ph_t), &ip->udp_src, UDP_HDR_SIZE + data_size);
+					NetCopyIP((void*)&ip->ip_dst, &NetPingIP);	   
+					ip->ip_sum   = 0;	
+					ip->ip_sum   = csum_calc((unsigned short*)ip, IP_HDR_SIZE_NO_UDP);
+							 
+					psh.dest_address = NetPingIP;
 
-		ip->udp_xsum = csum_calc((unsigned short*)pseudogram , psize);
-		
-		eth_send((volatile void *)packet, total_length);
-		
-		Util_Printf("player update for player_id=%d old pos.x=%u, old pos.y=%u, size=%u\n", 
-		player[i].player_id, player[i].old_pos.x, player[i].old_pos.y, player[i].size);
-		Uart_Printf ("udp packet was transmitted !\n");
-				
+					ip->udp_xsum = 0; 
+					memcpy(pseudogram , (char*) &psh , sizeof(udp_ph_t));
+					memcpy(pseudogram + sizeof(udp_ph_t), &ip->udp_src, UDP_HDR_SIZE + data_size);
+
+					ip->udp_xsum = csum_calc((unsigned short*)pseudogram , psize);
+					
+					eth_send((volatile void *)packet, total_length);
+					
+					Util_Printf("player update for player_id=%d old pos.x=%u, old pos.y=%u, size=%u\n", 
+					player[j].player_id, player[j].old_pos.x, player[j].old_pos.y, player[j].size);
+					Uart_Printf ("udp packet was transmitted !\n");
+				}
+			}
+					
 		}
 	}
 
