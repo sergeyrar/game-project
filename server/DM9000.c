@@ -11,7 +11,7 @@
 
 
 
-
+//#define DEBUG_MODE
 #define DM9000_DBG	Uart_Printf
 
 #define DM9000_outb(d,r) 	( *(volatile u8 *)r = d )
@@ -456,11 +456,11 @@ eth_send(volatile void *packet, int length)
 	int tmo;
 	int iNumOfMsecItersToWait = 0;
 	struct board_info *db = &dm9000_info;
-	
-	Uart_Printf ("eth_send: Enter call\n");	
+#ifdef DEBUG_MODE	
+	//Uart_Printf ("eth_send: Enter call\n");	
 
-	DM9000_DMP_PACKET("eth_send", packet, length);
-
+	//DM9000_DMP_PACKET("eth_send", packet, length);
+#endif
 	DM9000_iow(DM9000_ISR, IMR_PTM); /* Clear Tx bit in ISR */
 
 	/* Move data to DM9000 TX RAM */
@@ -488,7 +488,7 @@ eth_send(volatile void *packet, int length)
 	}
 	DM9000_iow(DM9000_ISR, IMR_PTM); /* Clear Tx bit in ISR */
 
-	DM9000_DBG("transmit done\n\n");
+	//DM9000_DBG("transmit done\n\n");
 
 	return 0;
 	

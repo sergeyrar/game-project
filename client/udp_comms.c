@@ -16,8 +16,10 @@
 struct sockaddr_in my_addr, send_addr, recv_addr;
 static int s;
 static socklen_t slen=sizeof(struct sockaddr_in);
-static unsigned int recv_buf_len = sizeof(player_t);
-static unsigned int send_buf_len = sizeof(char);
+static unsigned int player_message_len = sizeof(player_t);
+static unsigned int send_message_len = sizeof(char);
+static unsigned int maze_message_len = sizeof(pos_t);
+
 
 void udp_init()
 {
@@ -56,7 +58,7 @@ void register_in_server()
 
 	for (i = 0; i < 5; i++)
 	{
-		if (sendto(s, (void*)&reg, send_buf_len, 0, (struct sockaddr *)&send_addr, slen)==-1)
+		if (sendto(s, (void*)&reg, send_message_len, 0, (struct sockaddr *)&send_addr, slen)==-1)
 		{
 			die("sendto() failed");
 		}
@@ -68,7 +70,7 @@ void register_in_server()
 
 void send_message(void* key_stroke)
 {
-	if (sendto(s, key_stroke, send_buf_len, 0, (struct sockaddr *)&send_addr, slen)==-1)
+	if (sendto(s, key_stroke, send_message_len, 0, (struct sockaddr *)&send_addr, slen)==-1)
 	{
 		die("sendto() failed");
 	}
@@ -80,15 +82,35 @@ void send_message(void* key_stroke)
 void receive_state_update(player_t *player)
 {
 
-	unsigned char buf[recv_buf_len];
+	unsigned char buf[player_message_len];
 	player_t *player_ptr;
 
 	
-	if ((recvfrom(s, buf, recv_buf_len, 0, (struct sockaddr *) &recv_addr, &slen)) == -1)
+	if ((recvfrom(s, buf, player_message_len, 0, (struct sockaddr *) &recv_addr, &slen)) == -1)
 	{
 		die("recvfrom()");
 	}
 
 	player_ptr = (player_t*)buf;
-	memcpy(&player[player_ptr->player_id], buf, sizeof(player_t));
+	memcpy(&player[player_ptr->player_id], buf, player_message_len);
+}
+
+
+
+
+void receive_maze_info(pos_t *maze)
+{
+	unsigned char buf[maze_message_len];
+	int i;
+	
+	for (i = 0; i < MAZE_SIZE;)
+	{
+
+		if ((recvfrom(s, buf, maze_message_len, 0, (struct sockaddr *) &recv_addr, &slen)) == -1)
+		{
+			die("recvfrom()");
+		}
+
+	memcpy(&maze[i++], buf, maze_message_len);
+	}
 }

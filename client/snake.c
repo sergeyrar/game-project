@@ -15,24 +15,69 @@
 
 
 /* LOCAL FUNCTIONS */
-static void print_board_borders()
+static void print_board_borders(pos_t *maze)
 {
-	int i;
-	for (i=0; i<BOARD_HEIGHT; ++i)
-	{
-		gotoxy(0,i);
-		printf("%c",LEFT_RIGHT_BORDER);
-		gotoxy(BOARD_WIDTH,i);
-		printf("%c",LEFT_RIGHT_BORDER);
-	}
+	int i,j;
+	
+	
+	
+	char map[40][101] =  {{"----------------------------------------------------------------------------------------------------"},
+						  {"|                                                                                                  |"},
+						  {"|                                                                                                  |"},
+						  {"|                                                                                                  |"},
+						  {"|                                                                                                  |"},
+						  {"|                                                                                                  |"},
+						  {"|                                                                                                  |"},
+						  {"|                                                                                                  |"},
+						  {"|                                                                                                  |"},
+						  {"|                                                                                                  |"}, //10
+						  {"|                                                                                                  |"},
+						  {"|                                                                                                  |"},
+						  {"|                                                                                                  |"},
+						  {"|                                                                                                  |"},
+						  {"|                                                                                                  |"},
+						  {"|                                                                                                  |"},
+						  {"|                                                                                                  |"},
+						  {"|                                                                                                  |"},
+						  {"|                                                                                                  |"},
+						  {"|                                                                                                  |"}, //20
+						  {"|                                                                                                  |"},
+						  {"|                                                                                                  |"},
+						  {"|                                                                                                  |"},
+						  {"|                                                                                                  |"},
+						  {"|                                                                                                  |"},
+						  {"|                                                                                                  |"},
+						  {"|                                                                                                  |"},
+						  {"|                                                                                                  |"},
+						  {"|                                                                                                  |"},
+						  {"|                                                                                                  |"}, //30
+						  {"|                                                                                                  |"},
+						  {"|                                                                                                  |"},
+						  {"|                                                                                                  |"},
+						  {"|                                                                                                  |"},
+						  {"|                                                                                                  |"},
+						  {"|                                                                                                  |"},
+						  {"|                                                                                                  |"},
+						  {"|                                                                                                  |"},
+						  {"|                                                                                                  |"},
+						  {"----------------------------------------------------------------------------------------------------"}}; //40
+						  
 
-	for (i=0; i<BOARD_WIDTH; ++i)
+	for (i=0; i<40; ++i)
+	{	
+		for (j=0; j<101; ++j)
 		{
-			gotoxy(i,0);
-			printf("%c",UP_DOWN_BORDER);
-			gotoxy(i,BOARD_HEIGHT);
-			printf("%c",UP_DOWN_BORDER);
+		gotoxy(j+1,i+1);
+		printf("%c",map[i][j]);
 		}
+	}
+	
+	
+	for (i = 0; i < MAZE_SIZE; i++)
+	{
+		gotoxy(maze[i].x,maze[i].y);
+		printf("X");
+	}
 }
 
 
@@ -40,6 +85,8 @@ static void print_board_borders()
 int start_snake_game()
 {
 	player_t player[PLAYER_NUM] = {0};
+	pos_t maze[MAZE_SIZE] = {0};
+	
 	pthread_t send_thread;
 	pthread_t print_thread;
 	//pthread_t receive_thread;
@@ -50,35 +97,39 @@ int start_snake_game()
     snake_cell_t* snake_tail = NULL;
     direction_t direction = RIGHT;
 
-    print_board_borders();
+
     init_snake(&snake_head, &snake_tail);
    	print_snake(snake_head);
    	
-
+	/* set communication with server*/
    	udp_init();
    	register_in_server();
+
+	/* receive maze information from server and print it */
+	receive_maze_info(maze);
+    print_board_borders(maze);    
+
+
 
 	if (pthread_create(&send_thread, NULL, send_direction_update, NULL) != 0)
 	{
 		die("pthread creation failed\n");
 	}
 	
+	
 	if (pthread_create(&print_thread, NULL, print_new_state, player) != 0)
 	{
 		die("pthread creation failed\n");
 	}
-/*
-	if (pthread_create(&receive_thread, NULL, receive_update, player) != 0)
-	{
-		die("pthread creation failed\n");
-	}	
-*/
-    while(1) {
-        //usleep(10000/SPEED);
-		receive_state_update(player);
-        //print_new_state(player);
-	}
+	
+	
 
+    while(1) {
+		receive_state_update(player);
+	}
+	
+	
+	
     return score;
 }
 

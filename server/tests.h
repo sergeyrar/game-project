@@ -26,8 +26,13 @@ void TestPingServer();
 
 
 
+#define	ESC_KEY		0x1b
+#define PLAYER_NUM 256
+#define INITIAL_SIZE 1
 
-
+#define MAZE_SIZE 1000
+#define MAP_HEIGHT 40
+#define MAP_WIDTH 100
 
 
 
@@ -67,7 +72,7 @@ typedef struct player_s {
 /*----game functions----*/
 void receive_players_actions(unsigned char *player_id, unsigned char *action, unsigned char *station_id);
 void start_eth_device();
-void send_updates(player_t* player, unsigned int num_of_players);
+void send_updates(player_t *player, unsigned char player_id, unsigned int num_of_players , position_t *maze, unsigned char action);
 /*---------------------*/
 
 

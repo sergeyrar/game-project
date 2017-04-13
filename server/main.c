@@ -11,11 +11,7 @@
 //#define DEBUG_MODE
 //#define DEBUG_MODE_MAIN
 
-#define	ESC_KEY		0x1b
-#define PLAYER_NUM 256
-#define BOARD_WIDTH 100
-#define BOARD_HEIGHT 40
-#define INITIAL_SIZE 1
+
 
 
 
@@ -45,8 +41,8 @@ static void register_new_player(player_t *player, unsigned char player_id, unsig
 	if (player[player_id].active == 0)
 	{
 			player[player_id].active = 1;
-			player[player_id].pos.x = rand() % BOARD_WIDTH;
-			player[player_id].pos.y = rand() % BOARD_HEIGHT;
+			player[player_id].pos.x = rand() % MAP_WIDTH;
+			player[player_id].pos.y = rand() % MAP_HEIGHT;
 			player[player_id].old_pos.x = player[player_id].pos.x;
 			player[player_id].old_pos.y = player[player_id].pos.y;
 			player[player_id].size = INITIAL_SIZE;
@@ -66,7 +62,7 @@ static void register_new_player(player_t *player, unsigned char player_id, unsig
 }
 
 
-static void update_players_status(player_t *player, unsigned char *player_id, unsigned char *action, unsigned char *station_id)
+static void update_players_status(player_t *player, position_t *maze, unsigned char *player_id, unsigned char *action, unsigned char *station_id)
 {
 
 	if (*player_id ==0 && *action == 0)
@@ -101,7 +97,7 @@ static void update_players_status(player_t *player, unsigned char *player_id, un
 				break;
 
 		case START:	
-				Util_Printf ("GAME_RUN - player-id = %u , action = START\n", player_id);
+				//Util_Printf ("GAME_RUN - player-id = %u , action = START\n", *player_id);
 				register_new_player(player, *player_id, station_id);
 				break;
 
@@ -110,7 +106,7 @@ static void update_players_status(player_t *player, unsigned char *player_id, un
 				break;
 	}
 	
-	send_updates(player, PLAYER_NUM);	
+	send_updates(player, *player_id, PLAYER_NUM , maze, *action);	
 }
 
 static void check_players_collisions(unsigned char *player)
@@ -121,7 +117,7 @@ static void check_players_collisions(unsigned char *player)
 
 
 
-static void game_run(player_t *player)
+static void game_run(player_t *player, position_t *maze)
 {	
 
 	unsigned char player_id = 0;
@@ -130,7 +126,7 @@ static void game_run(player_t *player)
 	
 	//check_players_collisions(player_id);
 	receive_players_actions(&player_id, &action, station_id);	
-	update_players_status(player, &player_id, &action, station_id);
+	update_players_status(player, maze, &player_id, &action, station_id);
 	
 #ifdef DEBUG_MODE_MAIN
 		Util_Printf ("GAME_RUN new station id = %02x:%02x:%02x:%02x:%02x:%02x\n",
@@ -140,16 +136,32 @@ static void game_run(player_t *player)
 }
 
 
+
+static void maze_generate(position_t *maze)
+{
+	int i;
+	
+	for (i = 0; i < MAZE_SIZE; i++)
+	{
+		maze[i].x = rand() % MAP_WIDTH;
+		maze[i].y = rand() % MAP_HEIGHT;
+	}
+}
+
+
 int main ()
 {
 	player_t player[PLAYER_NUM] = {0};
-	
+	position_t maze[MAZE_SIZE] = {0};
+						  
+	maze_generate(maze);					  
+						  	
 	MMU_Table_Init_MMU ();	
 	start_eth_device();
 		
 	while( Uart_Getkey() != ESC_KEY ) 
  	{
-		game_run(player);
+		game_run(player, maze);
 	}
 }
 

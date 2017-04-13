@@ -12,6 +12,7 @@
 #define BUFFER 2
 #define SPEED 4
 #define PLAYER_NUM 256
+#define MAZE_SIZE 1000
 
 
 typedef enum direction_e {

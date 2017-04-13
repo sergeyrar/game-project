@@ -317,19 +317,17 @@ void receive_players_actions(unsigned char *player_id, unsigned char *action, un
 }
 
 
-
-void send_updates(player_t *player, unsigned int num_of_players)
+void send_updates(player_t *player, unsigned char player_id, unsigned int num_of_players , position_t *maze, unsigned char action)
 {
 	Ethernet_t *et;
 	IP_t	*ip;
-	char *data, *pseudogram;
+	char *data, *pseudogram_start, *pseudogram_game;
 	IPaddr_t tmp;
 	int	i,j;
 	uchar *packet = (uchar*)malloc(1000);
 	udp_ph_t psh;
 	IPaddr_t player_ip;
-	uchar data_size = sizeof(player_t);
-	int total_length = E802_HDR_SIZE + sizeof(IP_t) + data_size;
+	int total_length = E802_HDR_SIZE + sizeof(IP_t); //IP struct includes UDP headet as well
 	uchar *player_ptr = NULL;
 	uchar			test[6] = {0x48, 0x51, 0xb7, 0x58, 0x09, 0x3f};
 
@@ -347,7 +345,6 @@ void send_updates(player_t *player, unsigned int num_of_players)
 	/* IP header */
 	ip->ip_hl_v  = 0x45;		/* IP_HDR_SIZE / 4 (not including UDP) */	
 	ip->ip_tos   = 0;	
-	ip->ip_len   = htons(IP_HDR_SIZE + data_size );           //IP_HDR_SIZE includes UDP header as well.  UPDATE DATA_SIZE !	
 	ip->ip_off   = htons(0x4000);	/* No fragmentation */
 	ip->ip_ttl   = 255;
 	ip->ip_p     = IPPROTO_UDP;			
@@ -358,64 +355,111 @@ void send_updates(player_t *player, unsigned int num_of_players)
 	/* UDP header */
 	ip->udp_src = htons(SOURCE_PORT);
 	ip->udp_dst = htons(DEST_PORT);	
-	ip->udp_len = htons(UDP_HDR_SIZE + data_size);		
+	
 
 	//Now the UDP checksum using the pseudo header
     psh.source_address = NetOurIP;
     psh.placeholder = 0;
     psh.protocol = IPPROTO_UDP;
-    psh.udp_length = htons(UDP_HDR_SIZE + data_size);
-	
-	
-	int psize = sizeof(udp_ph_t) + UDP_HDR_SIZE + data_size;
-    pseudogram = malloc(psize);
-    
-
 
 	
-	for (i = 0; i < num_of_players; i++)
+	
+	int psize_start = sizeof(udp_ph_t) + UDP_HDR_SIZE + sizeof(position_t);
+	int psize_game = sizeof(udp_ph_t) + UDP_HDR_SIZE + sizeof(player_t);
+    pseudogram_start = malloc(psize_start);
+    pseudogram_game = malloc(psize_game);
+
+	// In case it's a new player send map only to him
+	if (action == START) 
 	{
-		//send updates only to active players 
-		if (player[i].active==1)
-		{	
+		ip->ip_len   = htons(IP_HDR_SIZE + sizeof(position_t));
+		ip->udp_len = htons(UDP_HDR_SIZE + sizeof(position_t));	
+		psh.udp_length = htons(UDP_HDR_SIZE + sizeof(position_t));
+		total_length+=sizeof(position_t);
+			
+		memcpy(et->et_dest, &player[player_id].station_id, MAC_SIZE);		
+		ip->ip_id    = htons(NetIPID++);
+		player_ptr = (uchar *)&NetPingIP;
+		player_ptr[3] = player[player_id].player_id;
 		
-		/* send DATA update to all active players */
-		memcpy((void*)data, &player[i], data_size);
-	
-			for (j = i; j < num_of_players; j++)
-			{	
-				if (player[j].active == 1)
-				{
-					memcpy(et->et_dest, &player[j].station_id, MAC_SIZE);		
-					ip->ip_id    = htons(NetIPID++);
-					player_ptr = &NetPingIP;
-					player_ptr[3] = player[j].player_id;
+		NetCopyIP((void*)&ip->ip_dst, &NetPingIP);
+		psh.dest_address = NetPingIP;
 
-					NetCopyIP((void*)&ip->ip_dst, &NetPingIP);	   
-					ip->ip_sum   = 0;	
-					ip->ip_sum   = csum_calc((unsigned short*)ip, IP_HDR_SIZE_NO_UDP);
-							 
-					psh.dest_address = NetPingIP;
+			
+		Util_Printf("sending map info to player=%d\n", player[player_id].player_id);
+		// need to break into smaller messages , map is to big for a single message.
+		for (i = 0; i < MAZE_SIZE; i++)
+		{
+			memcpy((void*)data, &maze[i], sizeof(position_t));				   
+			ip->ip_sum   = 0;	
+			ip->ip_sum   = csum_calc((unsigned short*)ip, IP_HDR_SIZE_NO_UDP);
+					 
+			ip->udp_xsum = 0; 
+			memcpy(pseudogram_start , (char*) &psh , sizeof(udp_ph_t));
+			memcpy(pseudogram_start + sizeof(udp_ph_t), &ip->udp_src, UDP_HDR_SIZE + sizeof(position_t));
+			ip->udp_xsum = csum_calc((unsigned short*)pseudogram_start , psize_start);
+			
+			eth_send((volatile void *)packet, total_length);
+			
+		}
+		Uart_Printf ("send map finished !\n");
+		
+	}
+	// In other cases, send player actions to all active players
+	else
+	{
+		ip->ip_len   = htons(IP_HDR_SIZE + sizeof(player_t));
+		ip->udp_len = htons(UDP_HDR_SIZE + sizeof(player_t));
+		total_length+=sizeof(player_t);
+		
+		psh.udp_length = htons(UDP_HDR_SIZE + sizeof(player_t));
 
-					ip->udp_xsum = 0; 
-					memcpy(pseudogram , (char*) &psh , sizeof(udp_ph_t));
-					memcpy(pseudogram + sizeof(udp_ph_t), &ip->udp_src, UDP_HDR_SIZE + data_size);
+		
+		Util_Printf("sending action updates\n");
+		for (i = 0; i < num_of_players; i++)
+		{
+			//send updates only to active players 
+			if (player[i].active==1)
+			{			
+				/* movement update data */
+				memcpy((void*)data, &player[i], sizeof(player_t));				
+												
+				for (j = i; j < num_of_players; j++)
+				{	
+					if (player[j].active == 1)
+					{
+						memcpy(et->et_dest, &player[j].station_id, MAC_SIZE);		
+						ip->ip_id    = htons(NetIPID++);
+						player_ptr = (uchar *)&NetPingIP;
+						player_ptr[3] = player[j].player_id;
 
-					ip->udp_xsum = csum_calc((unsigned short*)pseudogram , psize);
-					
-					eth_send((volatile void *)packet, total_length);
-					
-					Util_Printf("player update for player_id=%d old pos.x=%u, old pos.y=%u, size=%u\n", 
-					player[j].player_id, player[j].old_pos.x, player[j].old_pos.y, player[j].size);
-					Uart_Printf ("udp packet was transmitted !\n");
+						NetCopyIP((void*)&ip->ip_dst, &NetPingIP);	   
+						ip->ip_sum   = 0;	
+						ip->ip_sum   = csum_calc((unsigned short*)ip, IP_HDR_SIZE_NO_UDP);								 
+						psh.dest_address = NetPingIP;
+
+						ip->udp_xsum = 0; 
+						memcpy(pseudogram_game , (char*) &psh , sizeof(udp_ph_t));
+						memcpy(pseudogram_game + sizeof(udp_ph_t), &ip->udp_src, UDP_HDR_SIZE +  sizeof(player_t));
+
+						ip->udp_xsum = csum_calc((unsigned short*)pseudogram_game , psize_game);
+						
+						eth_send((volatile void *)packet, total_length);
+						
+						Util_Printf("player update for player_id=%d old pos.x=%u, old pos.y=%u, size=%u\n", 
+						player[j].player_id, player[j].old_pos.x, player[j].old_pos.y, player[j].size);
+						Uart_Printf ("udp packet was transmitted !\n");
+					}							
 				}
 			}
-					
 		}
+		
+	Util_Printf("sending action updates finished\n");
 	}
 
 	free(packet);
-	free(pseudogram);
+	free(pseudogram_start);
+	free(pseudogram_game);
 }
 
 
