@@ -49,6 +49,7 @@ typedef enum game_status_s {
 } game_status_t;
 
 
+
 typedef struct position_s {
 	unsigned int x;
 	unsigned int y;

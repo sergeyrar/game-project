@@ -15,6 +15,7 @@
 #define MAZE_SIZE 1000
 
 
+
 typedef enum direction_e {
     LEFT = 97, RIGHT = 100, UP = 119, DOWN = 115
 } direction_t;

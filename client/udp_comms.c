@@ -16,9 +16,19 @@
 struct sockaddr_in my_addr, send_addr, recv_addr;
 static int s;
 static socklen_t slen=sizeof(struct sockaddr_in);
-static unsigned int player_message_len = sizeof(player_t);
-static unsigned int send_message_len = sizeof(char);
-static unsigned int maze_message_len = sizeof(pos_t);
+
+
+
+/* used to parse udp data */
+static const unsigned short int map_msg_id = 0xaaaa;
+static const unsigned short int action_msg_id = 0xbbbb;
+
+
+/* buffer sizes */
+static const unsigned int send_message_len = sizeof(char);
+static const unsigned int player_message_len = sizeof(action_msg_id) + sizeof(player_t);
+static const unsigned int maze_message_len = sizeof(map_msg_id) + sizeof(pos_t);
+
 
 
 void udp_init()
@@ -62,8 +72,6 @@ void register_in_server()
 		{
 			die("sendto() failed");
 		}
-		
-		//printf("A 0x%02x message was sent to server\n", reg);
 		usleep(100000);
 	}
 }
@@ -91,13 +99,20 @@ void receive_state_update(player_t *player)
 		die("recvfrom()");
 	}
 
-	player_ptr = (player_t*)buf;
-	memcpy(&player[player_ptr->player_id], buf, player_message_len);
+
+	// Received unexpected message type, exit	
+	if ( memcmp(buf, &action_msg_id, sizeof(action_msg_id)) != 0 )
+	{
+		return;
+	}
+	
+	player_ptr = (player_t*)&buf[sizeof(action_msg_id)];
+	memcpy(&player[player_ptr->player_id], &buf[sizeof(action_msg_id)], player_message_len);  // skip message ID, to copy only data.
 }
 
 
 
-
+/* need to receive all messages to print map, so try until receive all of them */
 void receive_maze_info(pos_t *maze)
 {
 	unsigned char buf[maze_message_len];
@@ -110,7 +125,13 @@ void receive_maze_info(pos_t *maze)
 		{
 			die("recvfrom()");
 		}
-
-	memcpy(&maze[i++], buf, maze_message_len);
+		
+		/* need to receive all messages of type map to print map, so try until receive all of them */
+		if ( memcmp(buf, &map_msg_id, sizeof(map_msg_id)) != 0 )
+		{
+			continue;
+		}	
+		
+		memcpy(&maze[i++], &buf[sizeof(map_msg_id)], maze_message_len); // skip message ID, to copy only data.
 	}
 }
