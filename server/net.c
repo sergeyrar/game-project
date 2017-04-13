@@ -444,7 +444,7 @@ void send_updates(player_t *player, unsigned char player_id, unsigned int num_of
 				memcpy((void*)data_id, &action_msg_id, sizeof(action_msg_id));
 				memcpy((void*)data, &player[i], action_data_size);				
 												
-				for (j = i; j < num_of_players; j++)
+				for (j = 0; j < num_of_players; j++)
 				{	
 					if (player[j].active == 1)
 					{
