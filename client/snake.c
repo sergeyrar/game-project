@@ -163,9 +163,9 @@ void * send_direction_update(void * var)
 {
 	direction_t get_char = 0;
 	
-	while((get_char = getchar()) != ESC_KEY) 
+	while(1) 
 	{
-		//printf("thread is running1\n");
+		get_char = getchar();
 		send_message((void*)&get_char);	
 	}
 	

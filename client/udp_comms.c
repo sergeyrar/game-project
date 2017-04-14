@@ -13,16 +13,24 @@
 #define SEND_PORT 8888
 #define LISTEN_PORT 9999
 
+/* used to parse udp data */
+/* TODO : remove static const definitions of msg_id */
+#define MAP_MSG_ID 0xaaaa
+#define ACTION_MSG_ID 0xbbbb
+#define WIN_MSG_ID 0xcccc
+#define QUIT_MSG_ID 0xdddd
+
+
+static const unsigned short int map_msg_id = 0xaaaa;
+static const unsigned short int action_msg_id = 0xbbbb;
+static const unsigned short int win_msg_id = 0xcccc;
+static const unsigned short int quit_msg_id = 0xdddd;
+
+
+
 struct sockaddr_in my_addr, send_addr, recv_addr;
 static int s;
 static socklen_t slen=sizeof(struct sockaddr_in);
-
-
-
-/* used to parse udp data */
-static const unsigned short int map_msg_id = 0xaaaa;
-static const unsigned short int action_msg_id = 0xbbbb;
-
 
 /* buffer sizes */
 static const unsigned int send_message_len = sizeof(char);
@@ -92,6 +100,7 @@ void receive_state_update(player_t *player)
 
 	unsigned char buf[player_message_len];
 	player_t *player_ptr;
+	unsigned short int action;
 
 	
 	if ((recvfrom(s, buf, player_message_len, 0, (struct sockaddr *) &recv_addr, &slen)) == -1)
@@ -99,15 +108,34 @@ void receive_state_update(player_t *player)
 		die("recvfrom()");
 	}
 
-
-	// Received unexpected message type, exit	
-	if ( memcmp(buf, &action_msg_id, sizeof(action_msg_id)) != 0 )
-	{
-		return;
-	}
+	memcpy((void *)&action, buf, sizeof(action));
 	
-	player_ptr = (player_t*)&buf[sizeof(action_msg_id)];
-	memcpy(&player[player_ptr->player_id], &buf[sizeof(action_msg_id)], player_message_len);  // skip message ID, to copy only data.
+	switch (action)
+	{
+		case MAP_MSG_ID:
+			/* not expected to happen here */
+			return;
+			
+		case ACTION_MSG_ID:
+			player_ptr = (player_t*)&buf[sizeof(action_msg_id)];
+			memcpy(&player[player_ptr->player_id], &buf[sizeof(action_msg_id)], player_message_len);  // skip message ID, to copy only data.
+			return;
+		
+		case WIN_MSG_ID:
+			/* print player player_id wins!
+			 * and exit
+			 */
+			return;
+			
+		case QUIT_MSG_ID:
+			/* if player_id = my player_id
+			 * restore output
+			 * exit(1)
+			 * if player_id is other player
+			 * printf(" ") on his position.
+			 */
+			printf("received quit message\n");	
+	}
 }
 
 
@@ -126,7 +154,10 @@ void receive_maze_info(pos_t *maze)
 			die("recvfrom()");
 		}
 		
-		/* need to receive all messages of type map to print map, so try until receive all of them */
+		/* need to receive all messages of type map to print map, so try until receive all of them
+		 * 
+		 * TODO : need to handle quit/win message 
+		 *  */
 		if ( memcmp(buf, &map_msg_id, sizeof(map_msg_id)) != 0 )
 		{
 			continue;

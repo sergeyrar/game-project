@@ -40,7 +40,7 @@ static void register_new_player(player_t *player, unsigned char player_id, unsig
 			
 }
 
-static void dont_step_on_maze(player_t *player, unsigned char player_id, position_t *maze)
+static void check_step_on_maze(player_t *player, unsigned char player_id, position_t *maze)
 {
 	int i;
 	
@@ -70,37 +70,37 @@ static void update_players_status(player_t *player, position_t *maze, unsigned c
 	switch(*action)
 	{
 		case UP:
-				//Util_Printf ("GAME_RUN - player-id = %u , action = UP\n", player_id);
 				player[*player_id].pos.y -= 1;
 				break;
 
 		case DOWN:
-				//Util_Printf ("GAME_RUN - player-id = %u , action = DOWN\n", player_id);
 				player[*player_id].pos.y += 1;
 				break;
 
 		case LEFT:
-				//Util_Printf ("GAME_RUN - player-id = %u , action = LEFT\n", player_id);
 				player[*player_id].pos.x -= 1;
 				break;
 
 		case RIGHT:
-				//Util_Printf ("GAME_RUN - player-id = %u , action = RIGHT\n", player_id);
 				player[*player_id].pos.x += 1;
 				break;
 
 		case START:	
-				//Util_Printf ("GAME_RUN - player-id = %u , action = START\n", *player_id);
 				register_new_player(player, *player_id, station_id);
+				send_maze_data(maze, player, *player_id);
 				break;
 
 		case END:
-				//Util_Printf ("GAME_RUN - player-id = %u , action = END\n", player_id);
+				//clear_player();
+				//send_end_data();
 				break;
 	}
 	
-	dont_step_on_maze(player, *player_id, maze);
-	send_updates(player, *player_id, PLAYER_NUM , maze, *action);	
+	//if (did_player_win(player, *player_id) )	
+		// send_player_win(*player_id);
+
+	check_step_on_maze(player, *player_id, maze);
+	send_new_positions(player);	
 }
 
 static void check_players_collisions(unsigned char *player)

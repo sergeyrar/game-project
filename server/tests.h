@@ -73,7 +73,8 @@ typedef struct player_s {
 /*----game functions----*/
 void receive_players_actions(unsigned char *player_id, unsigned char *action, unsigned char *station_id);
 void start_eth_device();
-void send_updates(player_t *player, unsigned char player_id, unsigned int num_of_players , position_t *maze, unsigned char action);
+void send_maze_data(position_t *maze, player_t *player, unsigned char player_id);
+void send_new_positions(player_t *player);
 /*---------------------*/
 
 
