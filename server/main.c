@@ -7,7 +7,7 @@
 #include "Utils.h"
 #include "tests.h"
 
-
+#define MAP_OFFSET 17
 //#define DEBUG_MODE
 //#define DEBUG_MODE_MAIN
 
@@ -24,35 +24,42 @@ static void maze_generate(position_t *maze)
 		do
 		{	
 			
-			maze[i].x =  rand() % (MAP_WIDTH);
-			maze[i].y =  rand() % (MAP_HEIGHT);
+			maze[i].x = MAP_OFFSET + (rand() % (MAP_WIDTH - MAP_OFFSET));
+			maze[i].y = MAP_OFFSET + (rand() % (MAP_HEIGHT - MAP_OFFSET));
 			
 			// leave space for maze center
-		} while (  ((maze[i].x == MAP_WIDTH/2 - 1) && (maze[i].y == MAP_HEIGHT/2 - 1)) || \
-				   ((maze[i].x == MAP_WIDTH/2 - 1) && (maze[i].y == MAP_HEIGHT/2    )) || \
-				   ((maze[i].x == MAP_WIDTH/2 - 1) && (maze[i].y == MAP_HEIGHT/2 + 1)) || \ 
-				   ((maze[i].x == MAP_WIDTH/2    ) && (maze[i].y == MAP_HEIGHT/2 - 1)) || \
-				   ((maze[i].x == MAP_WIDTH/2    ) && (maze[i].y == MAP_HEIGHT/2    )) || \
-				   ((maze[i].x == MAP_WIDTH/2    ) && (maze[i].y == MAP_HEIGHT/2 + 1)) || \
-				   ((maze[i].x == MAP_WIDTH/2 + 1) && (maze[i].y == MAP_HEIGHT/2 - 1)) || \
-				   ((maze[i].x == MAP_WIDTH/2 + 1) && (maze[i].y == MAP_HEIGHT/2    )) || \
-				   ((maze[i].x == MAP_WIDTH/2 + 1) && (maze[i].y == MAP_HEIGHT/2 + 1))    );
+		} while (  ((maze[i].x == MAP_OFFSET + (MAP_WIDTH - MAP_OFFSET)/2 - 1) && (maze[i].y == MAP_OFFSET + (MAP_HEIGHT - MAP_OFFSET)/2 - 1)) || \
+				   ((maze[i].x == MAP_OFFSET + (MAP_WIDTH - MAP_OFFSET)/2 - 1) && (maze[i].y == MAP_OFFSET + (MAP_HEIGHT - MAP_OFFSET)/2    )) || \
+				   ((maze[i].x == MAP_OFFSET + (MAP_WIDTH - MAP_OFFSET)/2 - 1) && (maze[i].y == MAP_OFFSET + (MAP_HEIGHT - MAP_OFFSET)/2 + 1)) || \ 
+				   ((maze[i].x == MAP_OFFSET + (MAP_WIDTH - MAP_OFFSET)/2    ) && (maze[i].y == MAP_OFFSET + (MAP_HEIGHT - MAP_OFFSET)/2 - 1)) || \
+				   ((maze[i].x == MAP_OFFSET + (MAP_WIDTH - MAP_OFFSET)/2    ) && (maze[i].y == MAP_OFFSET + (MAP_HEIGHT - MAP_OFFSET)/2    )) || \
+				   ((maze[i].x == MAP_OFFSET + (MAP_WIDTH - MAP_OFFSET)/2    ) && (maze[i].y == MAP_OFFSET + (MAP_HEIGHT - MAP_OFFSET)/2 + 1)) || \
+				   ((maze[i].x == MAP_OFFSET + (MAP_WIDTH - MAP_OFFSET)/2 + 1) && (maze[i].y == MAP_OFFSET + (MAP_HEIGHT - MAP_OFFSET)/2 - 1)) || \
+				   ((maze[i].x == MAP_OFFSET + (MAP_WIDTH - MAP_OFFSET)/2 + 1) && (maze[i].y == MAP_OFFSET + (MAP_HEIGHT - MAP_OFFSET)/2    )) || \
+				   ((maze[i].x == MAP_OFFSET + (MAP_WIDTH - MAP_OFFSET)/2 + 1) && (maze[i].y == MAP_OFFSET + (MAP_HEIGHT - MAP_OFFSET)/2 + 1))    );
 	}
 }
 
 
 static void register_new_player(player_t *player, unsigned char player_id, unsigned char *station_id)
 {
+	
+	unsigned int x_map_position[2] = { (MAP_WIDTH + (rand() % MAP_OFFSET)) , rand() % MAP_OFFSET };
+	unsigned int y_map_position[2] = { (MAP_HEIGHT + (rand() % MAP_OFFSET)) , rand() % MAP_OFFSET };
+	unsigned int random_index = rand() % 2;
+	
 	if (player[player_id].active == 0)
 	{
 			player[player_id].active = 1;
-			player[player_id].pos.x = MAP_WIDTH + (rand() % 10);
-			player[player_id].pos.y = MAP_HEIGHT + (rand() % 10);
+			player[player_id].pos.x = x_map_position[random_index];
+			player[player_id].pos.y = y_map_position[random_index];
 			player[player_id].old_pos.x = player[player_id].pos.x;
 			player[player_id].old_pos.y = player[player_id].pos.y;
 			player[player_id].size = INITIAL_SIZE;
 			player[player_id].player_id = player_id;
 			memcpy((void*)&player[player_id].station_id, station_id, 6);
+			
+			
 		
 #ifdef DEBUG_MODE
 		Util_Printf("changed player[%d] to active = %d, old.pos.x=%u, old.pos.y=%u, size=%u\n", 
@@ -84,15 +91,15 @@ static int did_player_win(player_t *player, unsigned char player_id)
 {
 	/* If player's x,y position is in the center of the maze he wins */
 	int win = 0;
-			if (   ((player[player_id].pos.x == MAP_WIDTH/2 - 1) && (player[player_id].pos.y == MAP_HEIGHT/2 - 1)) || \
-				   ((player[player_id].pos.x == MAP_WIDTH/2 - 1) && (player[player_id].pos.y == MAP_HEIGHT/2    )) || \
-				   ((player[player_id].pos.x == MAP_WIDTH/2 - 1) && (player[player_id].pos.y == MAP_HEIGHT/2 + 1)) || \ 
-				   ((player[player_id].pos.x == MAP_WIDTH/2    ) && (player[player_id].pos.y == MAP_HEIGHT/2 - 1)) || \
-				   ((player[player_id].pos.x == MAP_WIDTH/2    ) && (player[player_id].pos.y == MAP_HEIGHT/2    )) || \
-				   ((player[player_id].pos.x == MAP_WIDTH/2    ) && (player[player_id].pos.y == MAP_HEIGHT/2 + 1)) || \
-				   ((player[player_id].pos.x == MAP_WIDTH/2 + 1) && (player[player_id].pos.y == MAP_HEIGHT/2 - 1)) || \
-				   ((player[player_id].pos.x == MAP_WIDTH/2 + 1) && (player[player_id].pos.y == MAP_HEIGHT/2    )) || \
-				   ((player[player_id].pos.x == MAP_WIDTH/2 + 1) && (player[player_id].pos.y == MAP_HEIGHT/2 + 1))    ) 
+			if (   ((player[player_id].pos.x == MAP_OFFSET + (MAP_WIDTH - MAP_OFFSET)/2 - 1) && (player[player_id].pos.y == MAP_OFFSET + (MAP_HEIGHT - MAP_OFFSET)/2 - 1)) || \
+				   ((player[player_id].pos.x == MAP_OFFSET + (MAP_WIDTH - MAP_OFFSET)/2 - 1) && (player[player_id].pos.y == MAP_OFFSET + (MAP_HEIGHT - MAP_OFFSET)/2    )) || \
+				   ((player[player_id].pos.x == MAP_OFFSET + (MAP_WIDTH - MAP_OFFSET)/2 - 1) && (player[player_id].pos.y == MAP_OFFSET + (MAP_HEIGHT - MAP_OFFSET)/2 + 1)) || \ 
+				   ((player[player_id].pos.x == MAP_OFFSET + (MAP_WIDTH - MAP_OFFSET)/2    ) && (player[player_id].pos.y == MAP_OFFSET + (MAP_HEIGHT - MAP_OFFSET)/2 - 1)) || \
+				   ((player[player_id].pos.x == MAP_OFFSET + (MAP_WIDTH - MAP_OFFSET)/2    ) && (player[player_id].pos.y == MAP_OFFSET + (MAP_HEIGHT - MAP_OFFSET)/2    )) || \
+				   ((player[player_id].pos.x == MAP_OFFSET + (MAP_WIDTH - MAP_OFFSET)/2    ) && (player[player_id].pos.y == MAP_OFFSET + (MAP_HEIGHT - MAP_OFFSET)/2 + 1)) || \
+				   ((player[player_id].pos.x == MAP_OFFSET + (MAP_WIDTH - MAP_OFFSET)/2 + 1) && (player[player_id].pos.y == MAP_OFFSET + (MAP_HEIGHT - MAP_OFFSET)/2 - 1)) || \
+				   ((player[player_id].pos.x == MAP_OFFSET + (MAP_WIDTH - MAP_OFFSET)/2 + 1) && (player[player_id].pos.y == MAP_OFFSET + (MAP_HEIGHT - MAP_OFFSET)/2    )) || \
+				   ((player[player_id].pos.x == MAP_OFFSET + (MAP_WIDTH - MAP_OFFSET)/2 + 1) && (player[player_id].pos.y == MAP_OFFSET + (MAP_HEIGHT - MAP_OFFSET)/2 + 1))    ) 
 				   				   
 				   {
 					   win = 1;
