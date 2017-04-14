@@ -105,8 +105,6 @@ void receive_state_update(player_t *player, int *win)
 	}
 
 	memcpy((void *)&action, buf, sizeof(action));
-
-
 	
 	switch (action)
 	{

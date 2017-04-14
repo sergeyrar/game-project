@@ -342,7 +342,6 @@ void start_eth_device(void)
 void receive_players_actions(unsigned char *player_id, unsigned char *action, unsigned char *station_id)
 {
 		eth_rx (player_id, action, station_id);
-		//Timer_Bdelay_Milli (100); 
 }
 
 

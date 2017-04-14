@@ -15,6 +15,32 @@
 
 
 
+static void maze_generate(position_t *maze)
+{
+	int i;
+	
+	for (i = 0; i < MAZE_SIZE; i++)
+	{
+		do
+		{	
+			
+			maze[i].x =  rand() % (MAP_WIDTH);
+			maze[i].y =  rand() % (MAP_HEIGHT);
+			
+			// leave space for maze center
+		} while (  ((maze[i].x == MAP_WIDTH/2 - 1) && (maze[i].y == MAP_HEIGHT/2 - 1)) || \
+				   ((maze[i].x == MAP_WIDTH/2 - 1) && (maze[i].y == MAP_HEIGHT/2    )) || \
+				   ((maze[i].x == MAP_WIDTH/2 - 1) && (maze[i].y == MAP_HEIGHT/2 + 1)) || \ 
+				   ((maze[i].x == MAP_WIDTH/2    ) && (maze[i].y == MAP_HEIGHT/2 - 1)) || \
+				   ((maze[i].x == MAP_WIDTH/2    ) && (maze[i].y == MAP_HEIGHT/2    )) || \
+				   ((maze[i].x == MAP_WIDTH/2    ) && (maze[i].y == MAP_HEIGHT/2 + 1)) || \
+				   ((maze[i].x == MAP_WIDTH/2 + 1) && (maze[i].y == MAP_HEIGHT/2 - 1)) || \
+				   ((maze[i].x == MAP_WIDTH/2 + 1) && (maze[i].y == MAP_HEIGHT/2    )) || \
+				   ((maze[i].x == MAP_WIDTH/2 + 1) && (maze[i].y == MAP_HEIGHT/2 + 1))    );
+	}
+}
+
+
 static void register_new_player(player_t *player, unsigned char player_id, unsigned char *station_id)
 {
 	if (player[player_id].active == 0)
@@ -121,9 +147,10 @@ static void update_players_status(player_t *player, position_t *maze, unsigned c
 	
 	if (did_player_win(player, *player_id))
 	{	
-		send_player_win(player, *player_id);	
+		send_player_win(player, *player_id);
+		maze_generate(maze);
+		memset(player, 0, sizeof(player_t) * PLAYER_NUM);
 	}
-	
 }
 
 static void check_players_collisions(unsigned char *player)
@@ -152,32 +179,6 @@ static void game_run(player_t *player, position_t *maze)
 #endif
 }
 
-
-
-static void maze_generate(position_t *maze)
-{
-	int i;
-	
-	for (i = 0; i < MAZE_SIZE; i++)
-	{
-		do
-		{	
-			
-			maze[i].x =  rand() % (MAP_WIDTH);
-			maze[i].y =  rand() % (MAP_HEIGHT);
-			
-			// leave space for maze center
-		} while (  ((maze[i].x == MAP_WIDTH/2 - 1) && (maze[i].y == MAP_HEIGHT/2 - 1)) || \
-				   ((maze[i].x == MAP_WIDTH/2 - 1) && (maze[i].y == MAP_HEIGHT/2    )) || \
-				   ((maze[i].x == MAP_WIDTH/2 - 1) && (maze[i].y == MAP_HEIGHT/2 + 1)) || \ 
-				   ((maze[i].x == MAP_WIDTH/2    ) && (maze[i].y == MAP_HEIGHT/2 - 1)) || \
-				   ((maze[i].x == MAP_WIDTH/2    ) && (maze[i].y == MAP_HEIGHT/2    )) || \
-				   ((maze[i].x == MAP_WIDTH/2    ) && (maze[i].y == MAP_HEIGHT/2 + 1)) || \
-				   ((maze[i].x == MAP_WIDTH/2 + 1) && (maze[i].y == MAP_HEIGHT/2 - 1)) || \
-				   ((maze[i].x == MAP_WIDTH/2 + 1) && (maze[i].y == MAP_HEIGHT/2    )) || \
-				   ((maze[i].x == MAP_WIDTH/2 + 1) && (maze[i].y == MAP_HEIGHT/2 + 1))    );
-	}
-}
 
 
 
