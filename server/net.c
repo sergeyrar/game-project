@@ -523,6 +523,83 @@ void send_new_positions(player_t *player)
 
 
 
+void send_player_win(player_t *player, unsigned char player_id)
+{
+	Ethernet_t *et;
+	IP_t	*ip;
+	char *data_id, *data, *pseudogram_game;
+	IPaddr_t tmp;
+	int	i,j;
+	uchar *packet = (uchar*)malloc(1000);
+	udp_ph_t psh;                                    // pseudo header struct variable for UDP checksum
+	IPaddr_t player_ip;
+	int total_length = E802_HDR_SIZE + sizeof(IP_t);  // Total length of headers - without data, will be added later. (IP struct includes UDP headet as well)
+	uchar *player_ptr = NULL;
+
+	/* place header pointers */
+	et = (Ethernet_t *)packet;
+	ip = (IP_t *)(packet + ETHER_HDR_SIZE);
+	data_id = packet + ETHER_HDR_SIZE + sizeof(IP_t);
+	data =  packet + ETHER_HDR_SIZE + sizeof(IP_t) + sizeof(unsigned short int);
+	/*----------------------*/
+
+	/* set common eth/ip header info */
+	common_fields_info_set(packet, et, ip, &psh);
+	
+	
+	/* allocate space for pseudo datagrams for UDP checksum calculation.
+	 * two different datagrams are needed for the two different message types
+	 *  */
+
+	unsigned short int action_msg_id = 0xcccc;
+	uchar action_data_size = sizeof(action_msg_id) + sizeof(unsigned char);	
+	int psize_game = sizeof(udp_ph_t) + UDP_HDR_SIZE + action_data_size;
+    pseudogram_game = malloc(psize_game);
+
+	// send player actions to all active players
+	ip->ip_len   = htons(IP_HDR_SIZE + action_data_size);
+	ip->udp_len = htons(UDP_HDR_SIZE + action_data_size);
+	psh.udp_length = htons(UDP_HDR_SIZE + action_data_size);
+	total_length+=action_data_size;
+	
+	
+	Util_Printf("sending action updates\n");
+
+		
+	memcpy((void*)data_id, &action_msg_id, sizeof(action_msg_id));
+	memcpy((void*)data, &player_id, action_data_size);				
+									
+	for (j = 0; j < PLAYER_NUM; j++)
+	{	
+		if (player[j].active == 1)
+		{
+			memcpy(et->et_dest, &player[j].station_id, MAC_SIZE);		
+			ip->ip_id    = htons(NetIPID++);
+			player_ptr = (uchar *)&NetPingIP;
+			player_ptr[3] = player[j].player_id;
+
+			NetCopyIP((void*)&ip->ip_dst, &NetPingIP);	   
+			ip->ip_sum   = 0;	
+			ip->ip_sum   = csum_calc((unsigned short*)ip, IP_HDR_SIZE_NO_UDP);								 
+			psh.dest_address = NetPingIP;
+
+			ip->udp_xsum = 0; 
+			memcpy(pseudogram_game , (char*) &psh , sizeof(udp_ph_t));
+			memcpy(pseudogram_game + sizeof(udp_ph_t), &ip->udp_src, UDP_HDR_SIZE +  action_data_size);
+
+			ip->udp_xsum = csum_calc((unsigned short*)pseudogram_game , psize_game);
+			
+			eth_send((volatile void *)packet, total_length);
+
+		}							
+	}			
+	
+	free(packet);
+	free(pseudogram_game);
+}
+
+
+
 void TestPing (void)
 {
 	if (bDoActAsPingServer == 0)

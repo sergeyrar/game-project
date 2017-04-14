@@ -54,6 +54,26 @@ static void check_step_on_maze(player_t *player, unsigned char player_id, positi
 	}
 }
 
+static int did_player_win(player_t *player, unsigned char player_id)
+{
+	/* If player's x,y position is in the center of the maze he wins */
+	int win = 0;
+			if (   ((player[player_id].pos.x == MAP_WIDTH/2 - 1) && (player[player_id].pos.y == MAP_HEIGHT/2 - 1)) || \
+				   ((player[player_id].pos.x == MAP_WIDTH/2 - 1) && (player[player_id].pos.y == MAP_HEIGHT/2    )) || \
+				   ((player[player_id].pos.x == MAP_WIDTH/2 - 1) && (player[player_id].pos.y == MAP_HEIGHT/2 + 1)) || \ 
+				   ((player[player_id].pos.x == MAP_WIDTH/2    ) && (player[player_id].pos.y == MAP_HEIGHT/2 - 1)) || \
+				   ((player[player_id].pos.x == MAP_WIDTH/2    ) && (player[player_id].pos.y == MAP_HEIGHT/2    )) || \
+				   ((player[player_id].pos.x == MAP_WIDTH/2    ) && (player[player_id].pos.y == MAP_HEIGHT/2 + 1)) || \
+				   ((player[player_id].pos.x == MAP_WIDTH/2 + 1) && (player[player_id].pos.y == MAP_HEIGHT/2 - 1)) || \
+				   ((player[player_id].pos.x == MAP_WIDTH/2 + 1) && (player[player_id].pos.y == MAP_HEIGHT/2    )) || \
+				   ((player[player_id].pos.x == MAP_WIDTH/2 + 1) && (player[player_id].pos.y == MAP_HEIGHT/2 + 1))    ) 
+				   				   
+				   {
+					   win = 1;
+				   }
+	
+	return win;
+}
 
 static void update_players_status(player_t *player, position_t *maze, unsigned char *player_id, unsigned char *action, unsigned char *station_id)
 {
@@ -96,11 +116,14 @@ static void update_players_status(player_t *player, position_t *maze, unsigned c
 				break;
 	}
 	
-	//if (did_player_win(player, *player_id) )	
-		// send_player_win(*player_id);
-
 	check_step_on_maze(player, *player_id, maze);
-	send_new_positions(player);	
+	send_new_positions(player);
+	
+	if (did_player_win(player, *player_id))
+	{	
+		send_player_win(player, *player_id);	
+	}
+	
 }
 
 static void check_players_collisions(unsigned char *player)

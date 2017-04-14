@@ -30,7 +30,7 @@ static void print_board_borders(pos_t *maze)
 /* GLOBAL FUNCTIONS */
 int start_snake_game()
 {
-	int score = 0;
+	int win = 0;
 	player_t player[PLAYER_NUM] = {0};
 	pos_t maze[MAZE_SIZE] = {0};
 	
@@ -56,12 +56,12 @@ int start_snake_game()
 		die("pthread creation failed\n");
 	}
 	
-    while(1) 
+    while(!win) 
     {
-		receive_state_update(player);
+		receive_state_update(player, &win);
 	}
 		
-    return score;
+    return win;
 }
 
 
@@ -251,7 +251,12 @@ void free_snake(snake_cell_t** snake_head)
 }
 
 
-void end_game(int score)
+void end_game(int winner)
 {
-	printf("game over, your score is %d",score);
+	int i;
+	
+	for (i = 0 ; i < 1000000 ; i++)
+	{
+		printf("game over the winning player is %d\n", winner);
+	}
 }

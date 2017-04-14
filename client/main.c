@@ -7,11 +7,11 @@
 
 int main(int argc, char **argv)
 {
-    unsigned int score = 0;
+    unsigned int winning_player = 0;
 
     init_input();
-    score = start_snake_game();
-    end_game(score);
+    winning_player = start_snake_game();
+    end_game(winning_player);
     restore_input();
 }
 

@@ -35,6 +35,10 @@ void TestPingServer();
 #define MAP_WIDTH 100
 
 
+#define MAP_MSG_ID 0xaaaa
+#define ACTION_MSG_ID 0xbbbb
+#define WIN_MSG_ID 0xcccc
+#define QUIT_MSG_ID 0xdddd
 
 
 
@@ -75,6 +79,7 @@ void receive_players_actions(unsigned char *player_id, unsigned char *action, un
 void start_eth_device();
 void send_maze_data(position_t *maze, player_t *player, unsigned char player_id);
 void send_new_positions(player_t *player);
+void send_player_win(player_t *player, unsigned char player_id);
 /*---------------------*/
 
 

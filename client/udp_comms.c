@@ -8,6 +8,7 @@
 
 #include "error_hndl.h"
 #include "snake.h"
+#include "udp_comms.h"
 
 #define SRV_IP "10.0.0.100"
 #define SEND_PORT 8888
@@ -15,12 +16,6 @@
 
 /* used to parse udp data */
 /* TODO : remove static const definitions of msg_id */
-#define MAP_MSG_ID 0xaaaa
-#define ACTION_MSG_ID 0xbbbb
-#define WIN_MSG_ID 0xcccc
-#define QUIT_MSG_ID 0xdddd
-
-
 static const unsigned short int map_msg_id = 0xaaaa;
 static const unsigned short int action_msg_id = 0xbbbb;
 static const unsigned short int win_msg_id = 0xcccc;
@@ -95,12 +90,13 @@ void send_message(void* key_stroke)
 
 
 
-void receive_state_update(player_t *player)
-{
-
+void receive_state_update(player_t *player, int *win)
+{	
+	unsigned char *ptr;
 	unsigned char buf[player_message_len];
 	player_t *player_ptr;
 	unsigned short int action;
+
 
 	
 	if ((recvfrom(s, buf, player_message_len, 0, (struct sockaddr *) &recv_addr, &slen)) == -1)
@@ -109,6 +105,8 @@ void receive_state_update(player_t *player)
 	}
 
 	memcpy((void *)&action, buf, sizeof(action));
+
+
 	
 	switch (action)
 	{
@@ -122,9 +120,10 @@ void receive_state_update(player_t *player)
 			return;
 		
 		case WIN_MSG_ID:
-			/* print player player_id wins!
-			 * and exit
-			 */
+			ptr = buf;
+			ptr += sizeof(action);					
+			*win = (int)*ptr;
+			
 			return;
 			
 		case QUIT_MSG_ID:

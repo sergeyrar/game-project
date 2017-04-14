@@ -10,3 +10,10 @@ void die(char *s)
    restore_input();
    exit(1);
 }
+
+
+void exit_game()
+{
+	restore_input();
+	exit(1);
+}
