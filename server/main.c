@@ -15,34 +15,13 @@
 
 
 
-/*
-pos_t update_food(snake_cell_t* snake_head)
-{
-	snake_cell_t* snake_cell=snake_head;
-	pos_t food;
-	food.x=(rand()%(BOARD_WIDTH-BUFFER)) + BUFFER;
-	food.y=(rand()%(BOARD_HEIGHT-BUFFER)) + BUFFER;		
-	
-	while(snake_cell != NULL){
-		if ((snake_cell->pos.x==food.x) && (snake_cell->pos.y==food.y)){
-			food.x=(rand()%(BOARD_WIDTH-BUFFER)) + BUFFER;
-			food.y=(rand()%(BOARD_HEIGHT-BUFFER)) + BUFFER;	
-		}
-		snake_cell=snake_cell->next;
-	}
-	return food;
-}
-
-*/
-
-
 static void register_new_player(player_t *player, unsigned char player_id, unsigned char *station_id)
 {
 	if (player[player_id].active == 0)
 	{
 			player[player_id].active = 1;
-			player[player_id].pos.x = rand() % MAP_WIDTH;
-			player[player_id].pos.y = rand() % MAP_HEIGHT;
+			player[player_id].pos.x = MAP_WIDTH + (rand() % 10);
+			player[player_id].pos.y = MAP_HEIGHT + (rand() % 10);
 			player[player_id].old_pos.x = player[player_id].pos.x;
 			player[player_id].old_pos.y = player[player_id].pos.y;
 			player[player_id].size = INITIAL_SIZE;
@@ -59,6 +38,20 @@ static void register_new_player(player_t *player, unsigned char player_id, unsig
 #endif
 	}
 			
+}
+
+static void dont_step_on_maze(player_t *player, unsigned char player_id, position_t *maze)
+{
+	int i;
+	
+	for (i = 0; i < MAZE_SIZE; i++)
+	{
+		if ( (player[player_id].pos.x == maze[i].x) &&  (player[player_id].pos.y == maze[i].y) )
+		{
+			player[player_id].pos.x = player[player_id].old_pos.x;
+			player[player_id].pos.y = player[player_id].old_pos.y;
+		}
+	}
 }
 
 
@@ -106,6 +99,7 @@ static void update_players_status(player_t *player, position_t *maze, unsigned c
 				break;
 	}
 	
+	dont_step_on_maze(player, *player_id, maze);
 	send_updates(player, *player_id, PLAYER_NUM , maze, *action);	
 }
 
@@ -143,10 +137,25 @@ static void maze_generate(position_t *maze)
 	
 	for (i = 0; i < MAZE_SIZE; i++)
 	{
-		maze[i].x = rand() % MAP_WIDTH;
-		maze[i].y = rand() % MAP_HEIGHT;
+		do
+		{	
+			
+			maze[i].x =  rand() % (MAP_WIDTH);
+			maze[i].y =  rand() % (MAP_HEIGHT);
+			
+			// leave space for maze center
+		} while (  ((maze[i].x == MAP_WIDTH/2 - 1) && (maze[i].y == MAP_HEIGHT/2 - 1)) || \
+				   ((maze[i].x == MAP_WIDTH/2 - 1) && (maze[i].y == MAP_HEIGHT/2    )) || \
+				   ((maze[i].x == MAP_WIDTH/2 - 1) && (maze[i].y == MAP_HEIGHT/2 + 1)) || \ 
+				   ((maze[i].x == MAP_WIDTH/2    ) && (maze[i].y == MAP_HEIGHT/2 - 1)) || \
+				   ((maze[i].x == MAP_WIDTH/2    ) && (maze[i].y == MAP_HEIGHT/2    )) || \
+				   ((maze[i].x == MAP_WIDTH/2    ) && (maze[i].y == MAP_HEIGHT/2 + 1)) || \
+				   ((maze[i].x == MAP_WIDTH/2 + 1) && (maze[i].y == MAP_HEIGHT/2 - 1)) || \
+				   ((maze[i].x == MAP_WIDTH/2 + 1) && (maze[i].y == MAP_HEIGHT/2    )) || \
+				   ((maze[i].x == MAP_WIDTH/2 + 1) && (maze[i].y == MAP_HEIGHT/2 + 1))    );
 	}
 }
+
 
 
 int main ()

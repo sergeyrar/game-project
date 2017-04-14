@@ -423,59 +423,57 @@ void send_updates(player_t *player, unsigned char player_id, unsigned int num_of
 			
 			eth_send((volatile void *)packet, total_length);	
 		}
+		// next send player update - so change total_length to initial value	
+		total_length-= map_data_size;
 	}
-	// In other cases, send player actions to all active players
-	else
+	
+	// send player actions to all active players
+	ip->ip_len   = htons(IP_HDR_SIZE + action_data_size);
+	ip->udp_len = htons(UDP_HDR_SIZE + action_data_size);
+	psh.udp_length = htons(UDP_HDR_SIZE + action_data_size);
+	total_length+=action_data_size;
+	
+	
+	Util_Printf("sending action updates\n");
+	for (i = 0; i < num_of_players; i++)
 	{
-		ip->ip_len   = htons(IP_HDR_SIZE + action_data_size);
-		ip->udp_len = htons(UDP_HDR_SIZE + action_data_size);
-		psh.udp_length = htons(UDP_HDR_SIZE + action_data_size);
-		total_length+=action_data_size;
+		//send updates only to active players 
+		if (player[i].active==1)
+		{			
+		/* movement update data */
 		
-		
-		Util_Printf("sending action updates\n");
-		for (i = 0; i < num_of_players; i++)
-		{
-			//send updates only to active players 
-			if (player[i].active==1)
-			{			
-				/* movement update data */
+			memcpy((void*)data_id, &action_msg_id, sizeof(action_msg_id));
+			memcpy((void*)data, &player[i], action_data_size);				
+											
+			for (j = 0; j < num_of_players; j++)
+			{	
+				if (player[j].active == 1)
+				{
+					memcpy(et->et_dest, &player[j].station_id, MAC_SIZE);		
+					ip->ip_id    = htons(NetIPID++);
+					player_ptr = (uchar *)&NetPingIP;
+					player_ptr[3] = player[j].player_id;
+
+					NetCopyIP((void*)&ip->ip_dst, &NetPingIP);	   
+					ip->ip_sum   = 0;	
+					ip->ip_sum   = csum_calc((unsigned short*)ip, IP_HDR_SIZE_NO_UDP);								 
+					psh.dest_address = NetPingIP;
+
+					ip->udp_xsum = 0; 
+					memcpy(pseudogram_game , (char*) &psh , sizeof(udp_ph_t));
+					memcpy(pseudogram_game + sizeof(udp_ph_t), &ip->udp_src, UDP_HDR_SIZE +  action_data_size);
+
+					ip->udp_xsum = csum_calc((unsigned short*)pseudogram_game , psize_game);
 				
-				memcpy((void*)data_id, &action_msg_id, sizeof(action_msg_id));
-				memcpy((void*)data, &player[i], action_data_size);				
-												
-				for (j = 0; j < num_of_players; j++)
-				{	
-					if (player[j].active == 1)
-					{
-						memcpy(et->et_dest, &player[j].station_id, MAC_SIZE);		
-						ip->ip_id    = htons(NetIPID++);
-						player_ptr = (uchar *)&NetPingIP;
-						player_ptr[3] = player[j].player_id;
-
-						NetCopyIP((void*)&ip->ip_dst, &NetPingIP);	   
-						ip->ip_sum   = 0;	
-						ip->ip_sum   = csum_calc((unsigned short*)ip, IP_HDR_SIZE_NO_UDP);								 
-						psh.dest_address = NetPingIP;
-
-						ip->udp_xsum = 0; 
-						memcpy(pseudogram_game , (char*) &psh , sizeof(udp_ph_t));
-						memcpy(pseudogram_game + sizeof(udp_ph_t), &ip->udp_src, UDP_HDR_SIZE +  action_data_size);
-
-						ip->udp_xsum = csum_calc((unsigned short*)pseudogram_game , psize_game);
+				
 					
-					
-						
-						eth_send((volatile void *)packet, total_length);
+					eth_send((volatile void *)packet, total_length);
 
-					}							
-				}
-			}
+				}							
+			}			
 		}
-		
-	Util_Printf("sending action updates finished\n");
 	}
-
+	
 	free(packet);
 	free(pseudogram_start);
 	free(pseudogram_game);

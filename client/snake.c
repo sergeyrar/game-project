@@ -17,61 +17,7 @@
 /* LOCAL FUNCTIONS */
 static void print_board_borders(pos_t *maze)
 {
-	int i,j;
-	
-	
-	
-	char map[40][101] =  {{"----------------------------------------------------------------------------------------------------"},
-						  {"|                                                                                                  |"},
-						  {"|                                                                                                  |"},
-						  {"|                                                                                                  |"},
-						  {"|                                                                                                  |"},
-						  {"|                                                                                                  |"},
-						  {"|                                                                                                  |"},
-						  {"|                                                                                                  |"},
-						  {"|                                                                                                  |"},
-						  {"|                                                                                                  |"}, //10
-						  {"|                                                                                                  |"},
-						  {"|                                                                                                  |"},
-						  {"|                                                                                                  |"},
-						  {"|                                                                                                  |"},
-						  {"|                                                                                                  |"},
-						  {"|                                                                                                  |"},
-						  {"|                                                                                                  |"},
-						  {"|                                                                                                  |"},
-						  {"|                                                                                                  |"},
-						  {"|                                                                                                  |"}, //20
-						  {"|                                                                                                  |"},
-						  {"|                                                                                                  |"},
-						  {"|                                                                                                  |"},
-						  {"|                                                                                                  |"},
-						  {"|                                                                                                  |"},
-						  {"|                                                                                                  |"},
-						  {"|                                                                                                  |"},
-						  {"|                                                                                                  |"},
-						  {"|                                                                                                  |"},
-						  {"|                                                                                                  |"}, //30
-						  {"|                                                                                                  |"},
-						  {"|                                                                                                  |"},
-						  {"|                                                                                                  |"},
-						  {"|                                                                                                  |"},
-						  {"|                                                                                                  |"},
-						  {"|                                                                                                  |"},
-						  {"|                                                                                                  |"},
-						  {"|                                                                                                  |"},
-						  {"|                                                                                                  |"},
-						  {"----------------------------------------------------------------------------------------------------"}}; //40
-						  
-
-	for (i=0; i<40; ++i)
-	{	
-		for (j=0; j<101; ++j)
-		{
-		gotoxy(j+1,i+1);
-		printf("%c",map[i][j]);
-		}
-	}
-	
+	int i;
 	
 	for (i = 0; i < MAZE_SIZE; i++)
 	{
@@ -84,23 +30,14 @@ static void print_board_borders(pos_t *maze)
 /* GLOBAL FUNCTIONS */
 int start_snake_game()
 {
+	int score = 0;
 	player_t player[PLAYER_NUM] = {0};
 	pos_t maze[MAZE_SIZE] = {0};
 	
 	pthread_t send_thread;
 	pthread_t print_thread;
 	//pthread_t receive_thread;
-	
-	
-    int score = 0;
-    snake_cell_t* snake_head = NULL;
-    snake_cell_t* snake_tail = NULL;
-    direction_t direction = RIGHT;
 
-
-    init_snake(&snake_head, &snake_tail);
-   	print_snake(snake_head);
-   	
 	/* set communication with server*/
    	udp_init();
    	register_in_server();
@@ -109,27 +46,21 @@ int start_snake_game()
 	receive_maze_info(maze);
     print_board_borders(maze);    
 
-
-
 	if (pthread_create(&send_thread, NULL, send_direction_update, NULL) != 0)
 	{
 		die("pthread creation failed\n");
 	}
-	
-	
+		
 	if (pthread_create(&print_thread, NULL, print_new_state, player) != 0)
 	{
 		die("pthread creation failed\n");
 	}
 	
-	
-
-    while(1) {
+    while(1) 
+    {
 		receive_state_update(player);
 	}
-	
-	
-	
+		
     return score;
 }
 
